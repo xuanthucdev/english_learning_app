@@ -1,10 +1,15 @@
 package com.example.be.database.dao;
 
-import com.example.be.database.entity.User;
+
+import com.example.be.database.entities.User;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-public interface UserDao extends CrudRepository<User, Integer> {
+@Repository
+public interface UserDao extends CrudRepository<User, Long> {
     Optional<User> findByEmail(String email);
+    boolean existsByPhone(String phone);
+
 }

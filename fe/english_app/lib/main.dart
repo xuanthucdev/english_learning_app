@@ -1,9 +1,19 @@
-import 'package:english_app/ui/onboarding/onboarding_child_page.dart';
-import 'package:english_app/ultils.enums/onboarding_page_position.dart';
+import 'package:english_app/providers/auth_provider.dart';
+import 'package:english_app/ui/login/login.dart';
+import 'package:english_app/ui/signup/signUp.dart';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyEnglishApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: MyEnglishApp(),
+    ),
+  );
 }
 
 class MyEnglishApp extends StatelessWidget {
@@ -12,11 +22,9 @@ class MyEnglishApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Demo",
-      home: OnboardingChildPage(
-        onboardingPagePosition: OnboardingPagePosition.page1,
-        nextOnPressed: () {},
-      ),
+      debugShowCheckedModeBanner: false,
+      title: "English App",
+      home: LoginScreen(),
     );
   }
 }
