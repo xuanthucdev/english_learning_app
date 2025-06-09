@@ -1,5 +1,6 @@
 package com.example.be.database.entities;
 
+import com.example.be.database.enums.TokenType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,4 +37,6 @@ public class VerificationEmailToken {
             expiryDate = LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES);
         }
     }
+    @Enumerated(EnumType.STRING)
+    private TokenType tokenType;
 }

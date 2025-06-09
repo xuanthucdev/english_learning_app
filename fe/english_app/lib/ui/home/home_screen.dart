@@ -1,9 +1,11 @@
 import 'package:english_app/providers/auth_provider.dart';
+import 'package:english_app/ui/admin/home_screen.dart';
 import 'package:english_app/ui/chat/chatScreen.dart';
 import 'package:english_app/ui/home/aptitude_test_screen.dart';
 import 'package:english_app/ui/home/full_test.dart';
 import 'package:english_app/ui/home/grammar_screen.dart';
 import 'package:english_app/ui/home/mini_test_screen.dart';
+import 'package:english_app/ui/home/my_info_screen.dart';
 import 'package:english_app/ui/home/rank_screen.dart';
 import 'package:english_app/ui/home/skill_test_screen.dart';
 import 'package:english_app/ui/home/update_vip_screen.dart';
@@ -34,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.purple.shade100,
       appBar: _buildAppBar(context),
       drawer: _buildDrawer(context),
       body: Column(
@@ -111,17 +113,17 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSpacing: 16,
         children: [
           _buildFeatureCard(context, "Aptitude Test",
-              "assets/images/onboarding/onboarding1.jpg", AptitudeTestScreen()),
-          _buildFeatureCard(context, "Mini Test",
-              "assets/images/onboarding/onboarding2.jpg", MiniTestScreen()),
-          _buildFeatureCard(context, "Full Test",
-              "assets/images/onboarding/onboarding3.jpg", FullTestScreen()),
+              "assets/images/aptitude.png", AptitudeTestScreen()),
+          _buildFeatureCard(
+              context, "Mini Test", "assets/images/mini.jpg", MiniTestScreen()),
+          _buildFeatureCard(context, "Full Test", "assets/images/full test.jpg",
+              FullTestScreen()),
           _buildFeatureCard(context, "Skill Test",
-              "assets/images/onboarding/onboarding1.jpg", SkillTestScreen()),
-          _buildFeatureCard(context, "Grammars",
-              "assets/images/onboarding/onboarding2.jpg", GrammarScreen()),
-          _buildFeatureCard(context, "Ranked",
-              "assets/images/onboarding/onboarding3.jpg", RankScreen()),
+              "assets/images/skill test.jpg", SkillTestScreen()),
+          _buildFeatureCard(context, "Grammars", "assets/images/grammar.jpg",
+              GrammarScreen()),
+          _buildFeatureCard(
+              context, "Ranked", "assets/images/ranked.jpg", RankScreen()),
         ],
       ),
     );
@@ -228,12 +230,22 @@ class _HomeScreenState extends State<HomeScreen> {
             }),
             const Divider(),
             _buildDrawerCategory("Profile"),
-            _buildDrawerItem(
-                Icons.person, "My information", Colors.purple, () {}),
+            _buildDrawerItem(Icons.person, "My information", Colors.purple, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MyInformationScreen()),
+              );
+            }),
             _buildDrawerItem(Icons.leaderboard, "Ranked", Colors.purple, () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => RankScreen()),
+              );
+            }),
+            _buildDrawerItem(Icons.leaderboard, "Admin", Colors.purple, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AdminScreen()),
               );
             }),
             _buildDrawerItem(Icons.logout, "Log out", Colors.purple, () {

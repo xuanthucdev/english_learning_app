@@ -1,6 +1,7 @@
 package com.example.be.services;
 
 
+import com.example.be.DTO.request.PasswordResetRequestDto;
 import com.example.be.DTO.request.UserLoginRequestDto;
 import com.example.be.DTO.request.UserSignUpRequest;
 import com.example.be.DTO.response.UserLoginResponseDto;
@@ -9,6 +10,7 @@ import com.example.be.database.dao.VerificationEmailTokenDao;
 import com.example.be.database.entities.User;
 import com.example.be.database.entities.VerificationEmailToken;
 import com.example.be.database.enums.AppError;
+import com.example.be.database.enums.TokenType;
 import com.example.be.exceptions.AppException;
 import com.example.be.mappers.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +26,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserMapper userMapper;
-    private final UserDao userDao;
+    public final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
     private final VerificationEmailTokenDao verificationEmailTokenDao;
     private final JwtTokenProvider jwtTokenProvider;
@@ -61,19 +63,49 @@ public class AuthService {
         verificationEmailTokenDao.save(VerificationEmailToken.builder().token(token).user(userDao.findById(userId).orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND))).build());
         return token;
     }
-
+    // Tạo token đặt lại mật khẩu
     @Transactional
-    public void verifyEmail(String token) {
-        verificationEmailTokenDao.findByToken(token).ifPresentOrElse(verificationEmailToken -> {
-            if (LocalDateTime.now().isAfter(verificationEmailToken.getExpiryDate())) {
-                throw new AppException(AppError.TOKEN_EXPIRED);
-            }
-            User user = verificationEmailToken.getUser();
-
-            userDao.save(user);
-            verificationEmailTokenDao.deleteAllByUser(user);
-        }, () -> {
-            throw new AppException(AppError.TOKEN_NOT_FOUND);
-        });
+    public String createPasswordResetToken(Long userId) {
+        User user = userDao.findById(userId)
+                .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
+        String token = UUID.randomUUID().toString();
+        VerificationEmailToken resetToken = VerificationEmailToken.builder()
+                .token(token)
+                .user(user)
+                .tokenType(TokenType.PASSWORD_RESET)
+                .expiryDate(LocalDateTime.now().plusHours(24))
+                .build();
+        verificationEmailTokenDao.save(resetToken);
+        return token;
     }
+
+    // Yêu cầu đặt lại mật khẩu
+    @Transactional
+    public void requestPasswordReset(String email) {
+        User user = userDao.findByEmail(email)
+                .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
+        // Kiểm tra Premium (tùy chọn)
+        if (!user.isVipActive()) {
+            // Có thể thêm logic giới hạn, ví dụ: số lần yêu cầu tối đa
+        }
+        createPasswordResetToken(user.getId());
+    }
+
+    // Đặt lại mật khẩu
+    @Transactional
+    public void resetPassword(PasswordResetRequestDto dto) {
+    VerificationEmailToken token = verificationEmailTokenDao.findByTokenAndTokenType(dto.getToken(), TokenType.PASSWORD_RESET)
+            .orElseThrow(() -> new AppException(AppError.TOKEN_INVALID));
+        if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
+        throw new AppException(AppError.TOKEN_EXPIRED);
+    }
+
+    User user = token.getUser();
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userDao.save(user);
+
+    // Xóa token sau khi sử dụng
+        verificationEmailTokenDao.delete(token);
+}
+
 }

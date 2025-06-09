@@ -3,9 +3,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:english_app/core/utils/logger.dart';
 import 'package:http/http.dart' as http;
+import '../../config/config.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://192.168.0.101:8083/auth';
+  static const String _baseUrl = '${Config.baseUrl}/auth';
 
   Future<Map<String, dynamic>> signUp({
     required String fullName,

@@ -3,6 +3,7 @@ package com.example.be.database.entities;
 
 import com.example.be.database.enums.Level;
 import com.example.be.database.enums.Role;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -19,6 +20,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Getter
 @Setter
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,7 +37,8 @@ public class User {
     private Set<Role> roles;
 
     private String fullName;
-
+    @Column(name = "avatar")
+    private String avatar;
 
     @Column(name = "registration_date", updatable = false)
     @CreationTimestamp
@@ -49,6 +52,7 @@ public class User {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
     @Enumerated(EnumType.STRING)
     private Level currentLevel = Level.BEGINNER;
 

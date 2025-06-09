@@ -25,7 +25,10 @@ public enum AppError {
     //VerificationEmailToken Errors
     TOKEN_NOT_FOUND("The token was not found", HttpStatus.NOT_FOUND),
     TOKEN_EXPIRED("Token has expired", HttpStatus.UNAUTHORIZED),
-
+    TOKEN_INVALID("Invalid token", HttpStatus.UNAUTHORIZED),
+    //File Errors
+    FILE_NOT_FOUND("The file was not found", HttpStatus.NOT_FOUND),
+    FILE_UPLOAD_FAILED("The file was upload failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
 
 

@@ -1,6 +1,7 @@
 package com.example.be.database.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,12 +11,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "test_attempts")
-@Builder
-@Setter
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-
+@Data
 public class TestAttempt {
 
 
@@ -25,31 +21,17 @@ public class TestAttempt {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "test_id", nullable = false)
+    @JoinColumn(name = "test_id")
     private Test test;
 
-    @Column(name = "start_time", nullable = false)
-    private LocalDateTime startTime;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(name = "end_time")
+    private int score;
+    private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    private Integer listeningScore;
-    private Integer readingScore;
-    private Integer totalScore;
-
-    @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "testAttempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAnswer> userAnswers = new ArrayList<>();
-
-    // Constructors, getters, setters
-
-    public void calculateTotalScore() {
-        if (listeningScore != null && readingScore != null) {
-            this.totalScore = listeningScore + readingScore;
-        }
-    }
 }

@@ -1,18 +1,15 @@
 package com.example.be.database.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
 
 @Entity
-@NoArgsConstructor
-@Table(name= "user_answers")
-@AllArgsConstructor
-@Getter
-@Setter
-@Builder
-public class UserAnswer {
 
+@Table(name= "user_answers")
+@Data
+public class UserAnswer {
 
 
 
@@ -21,19 +18,14 @@ public class UserAnswer {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attempt_id", nullable = false)
-    private TestAttempt attempt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_id", nullable = false)
+    @JoinColumn(name = "question_id")
     private Question question;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "answer_id")
     private Answer answer;
 
-    private Boolean isCorrect;
-
-    @Column(name = "time_spent_seconds")
-    private Integer timeSpentSeconds;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "test_attempt_id")
+    private TestAttempt testAttempt;
 }

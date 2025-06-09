@@ -1,6 +1,8 @@
 package com.example.be.database.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,6 +16,8 @@ import java.util.List;
 @Getter
 @Setter
 @Table(name = "answers")
+
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Answer {
 
     @Id
@@ -22,6 +26,7 @@ public class Answer {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
+    @JsonBackReference
     private Question question;
 
     @Column(columnDefinition = "TEXT")

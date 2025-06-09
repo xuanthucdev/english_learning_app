@@ -3,6 +3,7 @@ package com.example.be.database.entities;
 import com.example.be.database.enums.Difficulty;
 import com.example.be.database.enums.ToeicFrequency;
 import com.example.be.database.enums.Topic;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "vocabularies")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Vocabulary {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

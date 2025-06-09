@@ -1,28 +1,41 @@
+import 'package:english_app/models/question_model.dart';
+
 class Test {
+  final int id;
   final String title;
-  final String description;
+  final String? description;
+  final String testType;
   final int durationMinutes;
   final int questionCount;
-  final String testType;
+  final DateTime createdAt;
   final bool free;
+  final List<Question> questions;
 
   Test({
+    required this.id,
     required this.title,
-    required this.description,
+    this.description,
+    required this.testType,
     required this.durationMinutes,
     required this.questionCount,
-    required this.testType,
+    required this.createdAt,
     required this.free,
+    required this.questions,
   });
 
   factory Test.fromJson(Map<String, dynamic> json) {
     return Test(
-      title: json['title'] ?? 'Untitled Test',
-      description: json['description'] ?? 'No description',
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      description: json['description'],
+      testType: json['testType'] ?? '',
       durationMinutes: json['durationMinutes'] ?? 0,
       questionCount: json['questionCount'] ?? 0,
-      testType: json['testType'] ?? 'Unknown',
-      free: json['free'] ?? false,
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      free: json['free'] ?? true,
+      questions: (json['questions'] as List<dynamic>? ?? [])
+          .map((q) => Question.fromJson(q))
+          .toList(),
     );
   }
 }

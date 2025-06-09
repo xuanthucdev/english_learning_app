@@ -6,59 +6,59 @@ import '../../widgets/test_section_card.dart';
 class SkillTestScreen extends StatelessWidget {
   final List<TestSection> sections = [
     TestSection(
-      title: "Phần 1: Hình Ảnh",
+      title: "Part 1: Pictures",
       description:
-          "Tương ứng với mỗi bức ảnh, bạn sẽ được nghe 04 câu mô tả về nó. Nhiệm vụ của bạn là phải chọn câu mô tả đúng nhất cho bức ảnh.",
+          "For each picture, you will hear 04 descriptive sentences about it. Your task is to choose the most accurate description for the picture.",
       icon: Icons.image,
-      color: Colors.orange,
+      color: Colors.purple.shade700,
       testCount: 72,
     ),
     TestSection(
-      title: "Phần 2: Hỏi đáp",
+      title: "Part 2: Question-Response",
       description:
-          "Bạn sẽ nghe một câu hỏi (hoặc câu nói) và 03 lựa chọn trả lời. Nhiệm vụ của bạn là phải chọn ra câu trả lời đúng nhất trong ba đáp án A-B-C.",
+          "You will hear a question (or statement) and 03 answer choices. Your task is to select the most correct answer from the three options A-B-C.",
       icon: Icons.question_answer,
-      color: Colors.red,
+      color: Colors.purple.shade600,
       testCount: 25,
     ),
     TestSection(
-      title: "Phần 3: Hội thoại ngắn",
+      title: "Part 3: Short Conversations",
       description:
-          "Bạn sẽ nghe các đoạn hội thoại ngắn. Mỗi đoạn có 03 câu hỏi. Nhiệm vụ của bạn là chọn ra câu trả lời đúng nhất trong 04 đáp án của đề thi.",
+          "You will hear short conversations. Each conversation has 03 questions. Your task is to choose the most correct answer from the 04 options provided in the test.",
       icon: Icons.chat,
-      color: Colors.blue,
+      color: Colors.purple.shade500,
       testCount: 28,
     ),
     TestSection(
-      title: "Phần 4: Đoạn thông tin ngắn",
+      title: "Part 4: Short Talks",
       description:
-          "Bạn sẽ nghe các đoạn thông tin ngắn. Mỗi đoạn có 03 câu hỏi. Nhiệm vụ của bạn là chọn ra câu trả lời đúng nhất trong số 04 đáp án được cung cấp.",
+          "You will hear short informational passages. Each passage has 03 questions. Your task is to choose the most correct answer from the 04 options provided.",
       icon: Icons.message,
-      color: Colors.lightBlue,
+      color: Colors.purple.shade400,
       testCount: 22,
     ),
     TestSection(
-      title: "Phần 5: Đoạn thông tin ngắn",
+      title: "Part 5: Short Talks",
       description:
-          "Bạn sẽ nghe các đoạn thông tin ngắn. Mỗi đoạn có 03 câu hỏi. Nhiệm vụ của bạn là chọn ra câu trả lời đúng nhất trong số 04 đáp án được cung cấp.",
+          "You will hear short informational passages. Each passage has 03 questions. Your task is to choose the most correct answer from the 04 options provided.",
       icon: Icons.message,
-      color: Colors.lightBlue,
+      color: Colors.purple.shade400,
       testCount: 22,
     ),
     TestSection(
-      title: "Phần 6: Đoạn thông tin ngắn",
+      title: "Part 6: Short Talks",
       description:
-          "Bạn sẽ nghe các đoạn thông tin ngắn. Mỗi đoạn có 03 câu hỏi. Nhiệm vụ của bạn là chọn ra câu trả lời đúng nhất trong số 04 đáp án được cung cấp.",
+          "You will hear short informational passages. Each passage has 03 questions. Your task is to choose the most correct answer from the 04 options provided.",
       icon: Icons.message,
-      color: Colors.lightBlue,
+      color: Colors.purple.shade400,
       testCount: 22,
     ),
     TestSection(
-      title: "Phần 7: Đoạn thông tin ngắn",
+      title: "Part 7: Short Talks",
       description:
-          "Bạn sẽ nghe các đoạn thông tin ngắn. Mỗi đoạn có 03 câu hỏi. Nhiệm vụ của bạn là chọn ra câu trả lời đúng nhất trong số 04 đáp án được cung cấp.",
+          "You will hear short informational passages. Each passage has 03 questions. Your task is to choose the most correct answer from the 04 options provided.",
       icon: Icons.message,
-      color: Colors.lightBlue,
+      color: Colors.purple.shade400,
       testCount: 22,
     ),
   ];
@@ -66,13 +66,34 @@ class SkillTestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Skill Test")),
-      body: ListView.builder(
-        padding: EdgeInsets.all(10),
-        itemCount: sections.length,
-        itemBuilder: (context, index) {
-          return TestSectionCard(section: sections[index]);
-        },
+      appBar: AppBar(
+        title: const Text(
+          'Skill Test',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.purple,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.purple.shade100, Colors.white],
+          ),
+        ),
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16.0),
+          itemCount: sections.length,
+          itemBuilder: (context, index) {
+            return TestSectionCard(section: sections[index]);
+          },
+        ),
       ),
     );
   }
