@@ -6,8 +6,6 @@ class MyInformationScreen extends StatelessWidget {
     'Name': 'Alex Johnson',
     'Email': 'alex.johnson@example.com',
     'Phone': '+1 (555) 123-4567',
-    'Location': 'New York, USA',
-    'Joined': 'January 2025',
   };
 
   @override
