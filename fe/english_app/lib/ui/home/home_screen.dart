@@ -8,6 +8,7 @@ import 'package:english_app/ui/home/mini_test_screen.dart';
 import 'package:english_app/ui/home/my_info_screen.dart';
 import 'package:english_app/ui/home/rank_screen.dart';
 import 'package:english_app/ui/home/skill_test_screen.dart';
+import 'package:english_app/ui/home/test_history_screen.dart';
 import 'package:english_app/ui/home/update_vip_screen.dart';
 import 'package:english_app/ui/login/login.dart';
 import 'package:flutter/material.dart';
@@ -242,10 +243,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (context) => RankScreen()),
               );
             }),
-            _buildDrawerItem(Icons.leaderboard, "Admin", Colors.purple, () {
+            _buildDrawerItem(Icons.admin_panel_settings, "Admin", Colors.purple,
+                () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => AdminScreen()),
+              );
+            }),
+            _buildDrawerItem(Icons.history, "History Exam", Colors.purple, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TestHistoryScreen()),
               );
             }),
             _buildDrawerItem(Icons.logout, "Log out", Colors.purple, () {

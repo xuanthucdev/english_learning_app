@@ -1,8 +1,7 @@
 package com.example.be.services;
 
 
-import com.example.be.DTO.response.FileResponseDto;
-import com.example.be.DTO.response.UserLoginResponseDto;
+import com.example.be.DTO.response.UserLoginResponseDTO;
 import com.example.be.DTO.response.UserProfileDTO;
 import com.example.be.database.dao.UserDao;
 import com.example.be.database.entities.File;
@@ -27,7 +26,7 @@ public class UserService {
     private  UserMapper userMapper;
     @Autowired FileService fileService;
 
-    public UserLoginResponseDto.UserInfo findUserByEmail(String email) {
+    public UserLoginResponseDTO.UserInfo findUserByEmail(String email) {
         return userMapper.entityToDto(userDao.findByEmail(email).orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND)));
     }
     public void upgradeToVip(Long userId, int days) {

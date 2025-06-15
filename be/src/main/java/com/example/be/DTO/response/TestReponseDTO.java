@@ -1,23 +1,23 @@
 package com.example.be.DTO.response;
 
+import com.example.be.database.enums.TestType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-
 @Builder
-@Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileResponseDto {
+@Getter
+public class TestReponseDTO {
     private Long id;
-    private String name;
-    private String path;
-    private String type;
-    private Long size;
-    private UserLoginResponseDto.UserInfo creator;
+    private String title;
+    private String description;
+    private TestType testType;
+    private int durationMinutes;
+    private int questionCount;
+    private boolean isFree;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

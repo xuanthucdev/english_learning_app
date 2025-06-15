@@ -26,6 +26,6 @@ public class UserAnswer {
     private Answer answer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "test_attempt_id")
+    @JoinColumn(name = "attempt_id", nullable = false)
     private TestAttempt testAttempt;
 }

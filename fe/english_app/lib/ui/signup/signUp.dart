@@ -1,4 +1,3 @@
-// views/auth/register_screen.dart
 import 'package:english_app/providers/auth_provider.dart';
 import 'package:english_app/ui/login/login.dart';
 import 'package:flutter/material.dart';
@@ -69,7 +68,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               SizedBox(height: 10),
               Text(
-                "Đăng Ký Tài Khoản",
+                "Register Account",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               if (authProvider.errorMessage != null)
@@ -89,10 +88,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     AppTextField(
                       controller: _fullNameController,
                       icon: Icons.person,
-                      hintText: "Họ và tên",
+                      hintText: "Full Name",
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập họ và tên';
+                          return 'Please enter full name';
                         }
                         return null;
                       },
@@ -104,11 +103,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập email';
+                          return 'Please enter email';
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                             .hasMatch(value)) {
-                          return 'Email không hợp lệ';
+                          return 'Invalid email';
                         }
                         return null;
                       },
@@ -116,14 +115,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     AppTextField(
                       controller: _phoneController,
                       icon: Icons.phone,
-                      hintText: "Số điện thoại",
+                      hintText: "Phone Number",
                       keyboardType: TextInputType.phone,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập số điện thoại';
-                        } 
+                          return 'Please enter phone number';
+                        }
                         if (!RegExp(r'^[0-9]{10,11}$').hasMatch(value)) {
-                          return 'Số điện thoại không hợp lệ';
+                          return 'Invalid phone number';
                         }
                         return null;
                       },
@@ -131,14 +130,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     AppTextField(
                       controller: _passwordController,
                       icon: Icons.lock,
-                      hintText: "Mật khẩu",
+                      hintText: "Password",
                       isPassword: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập mật khẩu';
+                          return 'Please enter password';
                         }
                         if (value.length < 6) {
-                          return 'Mật khẩu phải có ít nhất 6 ký tự';
+                          return 'Password must be at least 6 characters';
                         }
                         return null;
                       },
@@ -146,18 +145,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     AppTextField(
                       controller: _confirmPasswordController,
                       icon: Icons.lock_outline,
-                      hintText: "Xác nhận lại mật khẩu",
+                      hintText: "Confirm Password",
                       isPassword: true,
                       validator: (value) {
                         if (value != _passwordController.text) {
-                          return 'Mật khẩu xác nhận không khớp';
+                          return 'Confirm password does not match';
                         }
                         return null;
                       },
                     ),
                     SizedBox(height: 20),
                     AppButton(
-                      text: "ĐĂNG KÝ",
+                      text: "REGISTER",
                       isLoading: authProvider.isLoading,
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
@@ -171,7 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           if (success) {
                             CustomSnackBar.show(
                               context,
-                              message: 'Đăng ký thành công!',
+                              message: 'Registration successful!',
                               isSuccess: true,
                             );
                             Navigator.pushReplacement(
@@ -196,11 +195,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                       child: Text.rich(
                         TextSpan(
-                          text: "Bạn có tài khoản rồi? ",
+                          text: "Already have an account? ",
                           style: TextStyle(fontSize: 14),
                           children: [
                             TextSpan(
-                              text: "Đăng nhập ngay",
+                              text: "Login now",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],

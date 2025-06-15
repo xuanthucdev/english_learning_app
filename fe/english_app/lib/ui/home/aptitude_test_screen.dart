@@ -165,11 +165,6 @@ class _AptitudeTestScreenState extends State<AptitudeTestScreen> {
                     ),
                   ),
                   SizedBox(height: 8),
-                  Text(
-                    test.description ?? 'No description available',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

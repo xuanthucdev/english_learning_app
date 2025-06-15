@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class TestProgressResponse {
+public class TestProgressResponseDTO {
     private Long userId;
     private int totalTestsTaken;
     private double averageScore;

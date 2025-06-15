@@ -1,13 +1,11 @@
     package com.example.be.controllers;
 
 
-    import com.example.be.DTO.request.PasswordResetRequestDto;
-    import com.example.be.DTO.request.UserLoginRequestDto;
-    import com.example.be.DTO.request.UserSignUpRequest;
-    import com.example.be.DTO.response.UserLoginResponseDto;
+    import com.example.be.DTO.request.PasswordResetRequestDTO;
+    import com.example.be.DTO.request.UserLoginRequestDTO;
+    import com.example.be.DTO.request.UserSignUpRequestDTO;
+    import com.example.be.DTO.response.UserLoginResponseDTO;
     import com.example.be.database.entities.User;
-    import com.example.be.database.enums.AppError;
-    import com.example.be.exceptions.AppException;
     import com.example.be.services.AuthService;
     import com.example.be.services.EmailService;
     import io.swagger.v3.oas.annotations.Operation;
@@ -36,7 +34,7 @@
         )
         @PostMapping("/login")
         public ResponseEntity<?> login(
-                @RequestBody @Valid UserLoginRequestDto userLoginRequestDto) {
+                @RequestBody @Valid UserLoginRequestDTO userLoginRequestDto) {
             return ResponseEntity.ok(authService.login(userLoginRequestDto));
         }
 
@@ -45,9 +43,9 @@
                 description = "Registers a new user, sends an email with a verification link, and returns the created user's information."
         )
         @PostMapping("/signup")
-        public ResponseEntity<UserLoginResponseDto.UserInfo> signup(
-                @RequestBody @Valid UserSignUpRequest userSignUpRequest) {
-            UserLoginResponseDto.UserInfo user = authService.signUp(userSignUpRequest);
+        public ResponseEntity<UserLoginResponseDTO.UserInfo> signup(
+                @RequestBody @Valid UserSignUpRequestDTO userSignUpRequest) {
+            UserLoginResponseDTO.UserInfo user = authService.signUp(userSignUpRequest);
             String verificationUrl = "http://localhost:8083/auth/verify?token="
                     + authService.createVerificationToken(user.getId());
             emailService.sendSimpleMessage(userSignUpRequest.getEmail(), "Verify account",
@@ -66,13 +64,18 @@
         @PostMapping("/password/reset")
         public ResponseEntity<?> requestPasswordReset(
                 @RequestParam @Parameter(description = "User's email address") String email) {
+            // Call requestPasswordReset to validate the email and user existence
             authService.requestPasswordReset(email);
-            User user = authService.userDao.findByEmail(email)
-                    .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
+
+            // Since requestPasswordReset already verifies the user exists, we can create the token
+            User user = authService.getUserByEmail(email); // Add this method to AuthService (see below)
             String resetUrl = "http://localhost:8083/auth/password/reset?token="
                     + authService.createPasswordResetToken(user.getId());
+
+            // Send the reset email
             emailService.sendSimpleMessage(email, "Reset Your Password",
                     "Please click the link to reset your password: " + resetUrl);
+
             return ResponseEntity.ok().build();
         }
 
@@ -83,7 +86,7 @@
         )
         @PostMapping("/password/reset/confirm")
         public ResponseEntity<?> resetPassword(
-                @RequestBody @Valid PasswordResetRequestDto passwordResetRequestDto) {
+                @RequestBody @Valid PasswordResetRequestDTO passwordResetRequestDto) {
             authService.resetPassword(passwordResetRequestDto);
             return ResponseEntity.ok().build();
         }

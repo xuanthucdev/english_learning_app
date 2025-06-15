@@ -15,13 +15,60 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _resetEmailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final _resetFormKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _resetEmailController.dispose();
     super.dispose();
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Forgot Password'),
+          content: Form(
+            key: _resetFormKey,
+            child: AppTextField(
+              controller: _resetEmailController,
+              icon: Icons.email,
+              hintText: "Enter your email",
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter email';
+                }
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                    .hasMatch(value)) {
+                  return 'Invalid email';
+                }
+                return null;
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_resetFormKey.currentState!.validate()) {
+                  Navigator.pop(context);
+                }
+              },
+              child: Text('Send'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -60,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: 10),
               Text(
-                "Đăng nhập",
+                "Login",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               if (authProvider.errorMessage != null)
@@ -84,11 +131,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập email';
+                          return 'Please enter email';
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                             .hasMatch(value)) {
-                          return 'Email không hợp lệ';
+                          return 'Invalid email';
                         }
                         return null;
                       },
@@ -96,18 +143,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     AppTextField(
                       controller: _passwordController,
                       icon: Icons.lock,
-                      hintText: "Mật khẩu",
+                      hintText: "Password",
                       isPassword: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập mật khẩu';
+                          return 'Please enter password';
                         }
                         return null;
                       },
                     ),
+                    SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: _showForgotPasswordDialog,
+                        child: Text(
+                          'Forgot password?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
                     SizedBox(height: 20),
                     AppButton(
-                      text: "ĐĂNG NHẬP",
+                      text: "LOGIN",
                       isLoading: authProvider.isLoading,
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
@@ -119,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (success) {
                             CustomSnackBar.show(
                               context,
-                              message: 'Đăng nhập thành công!',
+                              message: 'Login successful!',
                               isSuccess: true,
                             );
 
@@ -145,11 +207,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       child: Text.rich(
                         TextSpan(
-                          text: "Bạn chưa có tài khoản? ",
+                          text: "Don't have an account? ",
                           style: TextStyle(fontSize: 14),
                           children: [
                             TextSpan(
-                              text: "Đăng kí ngay",
+                              text: "Register now",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],

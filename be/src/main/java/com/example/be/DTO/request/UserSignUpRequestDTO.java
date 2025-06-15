@@ -11,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @Getter
 @Setter
-public class UserSignUpRequest {
+public class UserSignUpRequestDTO {
     private String fullName;
 
 

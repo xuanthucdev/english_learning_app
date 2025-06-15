@@ -14,7 +14,6 @@ class FileService {
     try {
       AppLogger.info('Attempting to upload file: ${file.path}');
 
-      // Get file info
       final filename = basename(file.path);
       final extension = filename.split('.').last.toLowerCase();
       final mimeType = _getMimeType(extension);
@@ -22,7 +21,6 @@ class FileService {
 
       AppLogger.debug('File info: $filename, $mimeType, ${fileSize} bytes');
 
-      // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/upload'))
         ..files.add(await http.MultipartFile.fromPath(
           'file',
@@ -30,7 +28,6 @@ class FileService {
           contentType: MediaType.parse(mimeType),
         ));
 
-      // Send request with timeout
       final streamedResponse =
           await request.send().timeout(const Duration(seconds: 30));
 

@@ -1,65 +1,119 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
 
 class ImportExamScreen extends StatefulWidget {
+  const ImportExamScreen({super.key});
+
   @override
   _ImportExamScreenState createState() => _ImportExamScreenState();
 }
 
 class _ImportExamScreenState extends State<ImportExamScreen> {
-  String _message = '';
+  String? _filePath;
+  final _picker = FilePicker.platform;
 
-  Future<void> _importExam() async {
+  Future<void> _pickFile() async {
+    final result = await _picker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json', 'csv'],
+    );
+    if (result != null) {
+      setState(() {
+        _filePath = result.files.single.path;
+      });
+    }
+  }
+
+  Future<void> _importFile() async {
+    if (_filePath == null) return;
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://192.168.0.107:8083/api/tests/import'),
+    );
+    request.files.add(await http.MultipartFile.fromPath('file', _filePath!));
+
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json', 'csv'],
-      );
-
-      if (result != null) {
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Exam Imported Successfully!')),
+        );
         setState(() {
-          _message = 'Đã chọn file: ${result.files.single.name}';
+          _filePath = null;
         });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to import exam.')),
+        );
       }
     } catch (e) {
-      setState(() {
-        _message = 'Lỗi khi import: $e';
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error during import.')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Import đề thi')),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Import đề thi',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      appBar: AppBar(
+        title: const Text('Import Exam'),
+        backgroundColor: Colors.purple,
+        elevation: 0,
+      ),
+      body: Container(
+        color: Colors.purple.shade50,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _pickFile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Select File',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (_filePath != null)
+                  Text(
+                    'Selected File: $_filePath',
+                    style:
+                        TextStyle(fontSize: 14, color: Colors.purple.shade900),
+                    textAlign: TextAlign.center,
+                  ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _filePath == null ? null : _importFile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Import',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _importExam,
-              icon: Icon(Icons.upload_file),
-              label: Text('Chọn file đề thi (JSON/CSV)'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              _message,
-              style: TextStyle(
-                color: _message.contains('Lỗi') ? Colors.red : Colors.green,
-                fontSize: 16,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

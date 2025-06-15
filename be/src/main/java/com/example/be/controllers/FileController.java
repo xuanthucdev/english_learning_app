@@ -1,7 +1,7 @@
 package com.example.be.controllers;
 
 
-import com.example.be.DTO.response.FileResponseDto;
+import com.example.be.DTO.response.FileResponseDTO;
 import com.example.be.mappers.FileMapper;
 import com.example.be.services.FileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,10 +29,10 @@ public class FileController {
             description = "Uploads a file and returns details of the uploaded file, including its generated ID."
     )
     @PostMapping("/upload")
-    public ResponseEntity<FileResponseDto> upload(
+    public ResponseEntity<FileResponseDTO> upload(
             @Parameter(description = "The file to upload", required = true)
             @RequestParam MultipartFile file) {
-        FileResponseDto fileResponseDto = fileMapper.entityToDto(fileService.upload(file));
+        FileResponseDTO fileResponseDto = fileMapper.entityToDto(fileService.upload(file));
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")

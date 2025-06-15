@@ -1,11 +1,12 @@
-import 'package:english_app/providers/auth_provider.dart'; // Import AuthProvider
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:provider/provider.dart'; // Import Provider
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:english_app/providers/auth_provider.dart';
 
 class UpdateVipScreen extends StatefulWidget {
-  const UpdateVipScreen({super.key}); // Remove userId parameter
+  const UpdateVipScreen({super.key});
 
   @override
   State<UpdateVipScreen> createState() => _UpdateVipScreenState();
@@ -15,14 +16,14 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
   bool _isLoading = false;
   String _message = '';
 
-  // Function to handle VIP upgrade with duration
   Future<void> _upgradeVip(String duration) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final userId = authProvider.userId; // Get userId from AuthProvider
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
 
     if (userId == null) {
       setState(() {
-        _message = 'User not logged in. Please log in first.';
+        _message = 'Please log in to upgrade your VIP status.';
       });
       return;
     }
@@ -35,7 +36,7 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
     try {
       final response = await http.post(
         Uri.parse(
-            'http://192.168.0.101:8083/users/$userId/upgrade-vip?duration=$duration'),
+            'http://192.168.0.107:8083/users/$userId/upgrade-vip?duration=$duration'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -47,12 +48,13 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
         });
       } else {
         setState(() {
-          _message = 'Failed to upgrade VIP: ${response.statusCode}';
+          _message =
+              'Failed to upgrade VIP: ${response.reasonPhrase} (${response.statusCode})';
         });
       }
     } catch (e) {
       setState(() {
-        _message = 'Error: $e';
+        _message = 'Error upgrading VIP: $e';
       });
     } finally {
       setState(() {
@@ -61,7 +63,6 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
     }
   }
 
-  // Widget to build each subscription card
   Widget _buildSubscriptionCard({
     required String duration,
     required String price,
@@ -87,12 +88,11 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Duration and Price
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '$duration Months',
+                    '$duration Month${int.parse(duration) > 1 ? 's' : ''}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -110,7 +110,6 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              // Benefits
               ...benefits.map((benefit) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
@@ -134,7 +133,6 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
                     ),
                   )),
               const SizedBox(height: 10),
-              // Upgrade Button
               Align(
                 alignment: Alignment.center,
                 child: _isLoading
@@ -167,7 +165,7 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Update VIP'),
+        title: const Text('Upgrade to VIP'),
         backgroundColor: Colors.deepPurple,
       ),
       body: SingleChildScrollView(
@@ -177,16 +175,15 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Upgrade to VIP Premium',
+                'VIP Premium Subscription',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               const Text(
-                'Unlock exclusive features by upgrading to VIP!',
+                'Unlock exclusive features with a VIP subscription!',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 20),
-              // Subscription Cards
               _buildSubscriptionCard(
                 duration: '1',
                 price: '19.99',
@@ -197,9 +194,7 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
                 ],
                 color: Colors.purple,
               ),
-
               const SizedBox(height: 20),
-              // Message Display
               if (_message.isNotEmpty)
                 Center(
                   child: Text(

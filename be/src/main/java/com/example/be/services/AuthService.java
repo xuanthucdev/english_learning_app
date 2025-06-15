@@ -1,10 +1,10 @@
 package com.example.be.services;
 
 
-import com.example.be.DTO.request.PasswordResetRequestDto;
-import com.example.be.DTO.request.UserLoginRequestDto;
-import com.example.be.DTO.request.UserSignUpRequest;
-import com.example.be.DTO.response.UserLoginResponseDto;
+import com.example.be.DTO.request.PasswordResetRequestDTO;
+import com.example.be.DTO.request.UserLoginRequestDTO;
+import com.example.be.DTO.request.UserSignUpRequestDTO;
+import com.example.be.DTO.response.UserLoginResponseDTO;
 import com.example.be.database.dao.UserDao;
 import com.example.be.database.dao.VerificationEmailTokenDao;
 import com.example.be.database.entities.User;
@@ -26,23 +26,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserMapper userMapper;
-    public final UserDao userDao;
+  private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
     private final VerificationEmailTokenDao verificationEmailTokenDao;
     private final JwtTokenProvider jwtTokenProvider;
 
-    public UserLoginResponseDto login(UserLoginRequestDto userLoginRequestDto) {
+    public UserLoginResponseDTO login(UserLoginRequestDTO userLoginRequestDto) {
         User user = userDao.findByEmail(userLoginRequestDto.getEmail()).orElseThrow(() -> new AppException(AppError.AUTH_INVALID_CREDENTIALS));
         if (!passwordEncoder.matches(userLoginRequestDto.getPassword(), user.getPassword())) {
             throw new AppException(AppError.AUTH_INVALID_CREDENTIALS);
         }
-        UserLoginResponseDto.UserInfo userInfo = userMapper.entityToDto(user);
-        return UserLoginResponseDto.builder().user(userInfo).accessToken(jwtTokenProvider.generateToken(userInfo.getEmail())).build();
+        UserLoginResponseDTO.UserInfo userInfo = userMapper.entityToDto(user);
+        return UserLoginResponseDTO.builder().user(userInfo).accessToken(jwtTokenProvider.generateToken(userInfo.getEmail())).build();
     }
 
 
     @Transactional
-    public UserLoginResponseDto.UserInfo signUp(UserSignUpRequest dto) {
+    public UserLoginResponseDTO.UserInfo signUp(UserSignUpRequestDTO dto) {
         User existUser = userDao.findByEmail(dto.getEmail()).orElse(null);
         if (existUser != null ) {
             throw new AppException(AppError.USER_EMAIL_ALREADY_EXISTS);
@@ -93,7 +93,7 @@ public class AuthService {
 
     // Đặt lại mật khẩu
     @Transactional
-    public void resetPassword(PasswordResetRequestDto dto) {
+    public void resetPassword(PasswordResetRequestDTO dto) {
     VerificationEmailToken token = verificationEmailTokenDao.findByTokenAndTokenType(dto.getToken(), TokenType.PASSWORD_RESET)
             .orElseThrow(() -> new AppException(AppError.TOKEN_INVALID));
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
@@ -107,5 +107,9 @@ public class AuthService {
     // Xóa token sau khi sử dụng
         verificationEmailTokenDao.delete(token);
 }
+    public User getUserByEmail(String email) {
+        return userDao.findByEmail(email)
+                .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
+    }
 
 }

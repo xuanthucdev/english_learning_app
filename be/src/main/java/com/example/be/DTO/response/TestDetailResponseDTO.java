@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class TestDetailResponse {
+public class TestDetailResponseDTO {
     private Long id;
     private String title;
     private String description;

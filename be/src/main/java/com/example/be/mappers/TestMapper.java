@@ -1,9 +1,8 @@
 package com.example.be.mappers;
 
-import com.example.be.DTO.response.TestReponseDto;
+import com.example.be.DTO.response.TestReponseDTO;
 import com.example.be.database.entities.Test;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -11,7 +10,7 @@ import java.util.List;
 public interface TestMapper {
 
 
-    TestReponseDto testToTestDTO(Test test);
+    TestReponseDTO testToTestDTO(Test test);
 
-    List<TestReponseDto> testsToTestDTOs(List<Test> tests);
+    List<TestReponseDTO> testsToTestDTOs(List<Test> tests);
 }

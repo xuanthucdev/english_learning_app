@@ -1,15 +1,45 @@
+// lib/ui/home/my_information_screen.dart
+import 'package:english_app/models/user_model.dart';
+import 'package:english_app/ui/home/edit_profile_screen.dart';
+import 'package:english_app/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
 
-class MyInformationScreen extends StatelessWidget {
-  // Sample user data
-  final Map<String, String> userInfo = {
-    'Name': 'Alex Johnson',
-    'Email': 'alex.johnson@example.com',
-    'Phone': '+1 (555) 123-4567',
-  };
+class MyInformationScreen extends StatefulWidget {
+  @override
+  _MyInformationScreenState createState() => _MyInformationScreenState();
+}
+
+class _MyInformationScreenState extends State<MyInformationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.user == null) {
+      authProvider.loadUserData();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
+    if (authProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please log in again')),
+        );
+        Navigator.pushReplacementNamed(context, '/login');
+      });
+      return const SizedBox.shrink();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -49,7 +79,6 @@ class MyInformationScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                // Profile Header
                 Center(
                   child: Column(
                     children: [
@@ -71,17 +100,16 @@ class MyInformationScreen extends StatelessWidget {
                         ),
                         child: CircleAvatar(
                           radius: 60,
+                          backgroundImage: authProvider.avatar != null &&
+                                  authProvider.avatar!.isNotEmpty
+                              ? NetworkImage(authProvider.avatar!)
+                              : null,
                           backgroundColor: Colors.purple.shade200,
-                          child: Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Colors.purple.shade900,
-                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        userInfo['Name']!,
+                        authProvider.fullName ?? 'Not available',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -89,7 +117,7 @@ class MyInformationScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        userInfo['Email']!,
+                        authProvider.email ?? 'Not logged in',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey.shade600,
@@ -99,7 +127,6 @@ class MyInformationScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 30),
-                // User Info Section
                 Text(
                   'Personal Details',
                   style: TextStyle(
@@ -109,17 +136,46 @@ class MyInformationScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                ...userInfo.entries.map((entry) => _buildInfoCard(
+                ...[
+                  {
+                    'label': 'Name',
+                    'value': authProvider.fullName ?? 'Not available'
+                  },
+                  {
+                    'label': 'Email',
+                    'value': authProvider.email ?? 'Not logged in'
+                  },
+                  {
+                    'label': 'Phone',
+                    'value': authProvider.phone ?? 'Not available'
+                  },
+                ].map((entry) => _buildInfoCard(
                       context,
-                      label: entry.key,
-                      value: entry.value,
+                      label: entry['label']!,
+                      value: entry['value']!,
                     )),
                 const SizedBox(height: 20),
-                // Edit Button
                 Center(
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Navigate to edit profile screen
+                    onPressed: () async {
+                      final updatedInfo = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditProfileScreen(
+                            userInfo: {
+                              'Name': authProvider.fullName ?? '',
+                              'Email': authProvider.email ?? '',
+                              'Phone': authProvider.phone ?? '',
+                            },
+                            avatarPath: authProvider.avatar,
+                          ),
+                        ),
+                      );
+                      if (updatedInfo != null) {
+                        await authProvider
+                            .loadUserData(); // Tải lại dữ liệu sau khi cập nhật
+                        setState(() {}); // Cập nhật UI
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple.shade700,
@@ -211,10 +267,6 @@ class MyInformationScreen extends StatelessWidget {
         return Icons.email_outlined;
       case 'Phone':
         return Icons.phone_outlined;
-      case 'Location':
-        return Icons.location_on_outlined;
-      case 'Joined':
-        return Icons.calendar_today;
       default:
         return Icons.info_outline;
     }

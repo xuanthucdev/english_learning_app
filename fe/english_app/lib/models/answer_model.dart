@@ -13,7 +13,7 @@ class Answer {
 
   factory Answer.fromJson(Map<String, dynamic> json) {
     return Answer(
-      id: json['id'] ?? 0,
+      id: json['id'],
       content: json['content'] ?? '',
       isCorrect: json['isCorrect'] ?? false,
       answerOrder: json['answerOrder'] ?? 0,

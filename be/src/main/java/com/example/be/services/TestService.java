@@ -1,10 +1,10 @@
 package com.example.be.services;
 
-import com.example.be.DTO.request.SubmitTestRequest;
-import com.example.be.DTO.response.SubmitTestResponse;
+import com.example.be.DTO.request.SubmitTestRequestDTO;
+import com.example.be.DTO.response.SubmitTestResponseDTO;
 import com.example.be.DTO.response.TestCSVDTO;
-import com.example.be.DTO.response.TestDetailResponse;
-import com.example.be.DTO.response.TestReponseDto;
+import com.example.be.DTO.response.TestDetailResponseDTO;
+import com.example.be.DTO.response.TestReponseDTO;
 import com.example.be.database.dao.TestAttemptDao;
 import com.example.be.database.dao.TestDao;
 import com.example.be.database.dao.UserAnswerDao;
@@ -20,9 +20,7 @@ import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -52,17 +50,17 @@ public class TestService {
     private UserDao userDao;
 
 
-    public List<TestReponseDto> getFullTestsDTO() {
+    public List<TestReponseDTO> getFullTestsDTO() {
         List<Test> tests = testDao.findByTestType(TestType.FULL_TEST);
         return testMapper.testsToTestDTOs(tests);
     }
 
-    public List<TestReponseDto> getAPTestsDTO() {
+    public List<TestReponseDTO> getAPTestsDTO() {
         List<Test> tests = testDao.findByTestType(TestType.APTITUDE_TEST);
         return testMapper.testsToTestDTOs(tests);
     }
 
-    public List<TestReponseDto> getMiniTestsDTO() {
+    public List<TestReponseDTO> getMiniTestsDTO() {
         List<Test> tests = testDao.findByTestType(TestType.MINI_TEST);
         return testMapper.testsToTestDTOs(tests);
     }
@@ -216,11 +214,11 @@ public class TestService {
         beanToCsv.write(csvRecords);
         return writer.toString();
     }
-    public TestDetailResponse getTestDetails(Long testId) {
+    public TestDetailResponseDTO getTestDetails(Long testId) {
         Test test = testDao.findById(testId)
                 .orElseThrow(() -> new RuntimeException("Test not found"));
 
-        return TestDetailResponse.builder()
+        return TestDetailResponseDTO.builder()
                 .id(test.getId())
                 .title(test.getTitle())
                 .description(test.getDescription())
@@ -228,14 +226,14 @@ public class TestService {
                 .durationMinutes(test.getDurationMinutes())
                 .questionCount(test.getQuestionCount())
                 .isFree(test.isFree())
-                .questions(test.getQuestions().stream().map(q -> TestDetailResponse.QuestionDTO.builder()
+                .questions(test.getQuestions().stream().map(q -> TestDetailResponseDTO.QuestionDTO.builder()
                                 .id(q.getId())
                                 .part(q.getPart().name())
                                 .content(q.getContent())
                                 .audioUrl(q.getAudioUrl())
                                 .imageUrl(q.getImageUrl())
                                 .difficulty(q.getDifficulty().name())
-                                .answers(q.getAnswer().stream().map(a -> TestDetailResponse.AnswerDTO.builder()
+                                .answers(q.getAnswer().stream().map(a -> TestDetailResponseDTO.AnswerDTO.builder()
                                                 .id(a.getId())
                                                 .content(a.getContent())
                                                 .answerOrder(a.getAnswerOrder())
@@ -246,17 +244,13 @@ public class TestService {
                 .build();
     }
     @Transactional
-    public SubmitTestResponse submitTest(Long testId, SubmitTestRequest request) {
-        // 1. Validate user và test
+    public SubmitTestResponseDTO submitTest(Long testId, SubmitTestRequestDTO request) {
         User user = userDao.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Test test = testDao.findById(testId)
                 .orElseThrow(() -> new RuntimeException("Test not found"));
 
-
-
-        // 3. Kiểm tra thời gian làm bài
         if (request.getStartTime() == null) {
             throw new RuntimeException("Start time is required");
         }
@@ -265,19 +259,18 @@ public class TestService {
             throw new RuntimeException("Test duration exceeded");
         }
 
-        // 4. Kiểm tra danh sách câu trả lời
         if (request.getAnswers() == null || request.getAnswers().isEmpty()) {
             throw new RuntimeException("No answers submitted");
         }
 
-        // 5. Tạo đối tượng TestAttempt
         TestAttempt testAttempt = new TestAttempt();
         testAttempt.setTest(test);
         testAttempt.setUser(user);
         testAttempt.setStartTime(request.getStartTime());
         testAttempt.setEndTime(LocalDateTime.now());
 
-        // 6. Chuẩn bị map để tra cứu nhanh câu hỏi
+        testAttempt = testAttemptDao.save(testAttempt); // ⚠️ Gán lại để có ID!
+
         Map<Long, Question> questionMap = test.getQuestions()
                 .stream()
                 .collect(Collectors.toMap(Question::getId, q -> q));
@@ -285,13 +278,12 @@ public class TestService {
         int correctAnswers = 0;
         int totalQuestions = test.getQuestions().size();
 
-        for (SubmitTestRequest.UserAnswerDTO userAnswerDTO : request.getAnswers()) {
+        for (SubmitTestRequestDTO.UserAnswerDTO userAnswerDTO : request.getAnswers()) {
             Question question = questionMap.get(userAnswerDTO.getQuestionId());
             if (question == null) {
                 throw new RuntimeException("Question not found with ID: " + userAnswerDTO.getQuestionId());
             }
 
-            // Tìm đáp án được chọn
             Optional<Answer> selectedAnswerOpt = question.getAnswer()
                     .stream()
                     .filter(a -> a.getId().equals(userAnswerDTO.getAnswerId()))
@@ -303,26 +295,22 @@ public class TestService {
 
             Answer selectedAnswer = selectedAnswerOpt.get();
 
-            // Lưu UserAnswer
             UserAnswer userAnswer = new UserAnswer();
-            userAnswer.setTestAttempt(testAttempt);
+            userAnswer.setTestAttempt(testAttempt); // TestAttempt đã có ID
             userAnswer.setQuestion(question);
             userAnswer.setAnswer(selectedAnswer);
             userAnswerDao.save(userAnswer);
 
-            // Tính điểm
             if (selectedAnswer.isCorrect()) {
                 correctAnswers++;
             }
         }
 
-        // 7. Chuyển điểm sang thang TOEIC (giả định: 10–990)
         int scaledScore = convertToToeicScore(correctAnswers, totalQuestions);
         testAttempt.setScore(scaledScore);
         testAttemptDao.save(testAttempt);
 
-        // 8. Trả về kết quả
-        return SubmitTestResponse.builder()
+        return SubmitTestResponseDTO.builder()
                 .testId(testId)
                 .userId(user.getId())
                 .score(scaledScore)
@@ -330,9 +318,9 @@ public class TestService {
                 .build();
     }
 
+
     private int convertToToeicScore(int correctAnswers, int totalQuestions) {
-        // Tỷ lệ phần trăm đúng * 990
         double percent = (double) correctAnswers / totalQuestions;
-        return Math.max(10, (int) (percent * 990));  // TOEIC min: 10
+        return Math.max(10, (int) (percent * 990));
     }
 }

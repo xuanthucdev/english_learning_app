@@ -5,14 +5,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class UserLoginResponseDto {
+public class UserLoginResponseDTO {
     private UserInfo user;
     private String accessToken;
 

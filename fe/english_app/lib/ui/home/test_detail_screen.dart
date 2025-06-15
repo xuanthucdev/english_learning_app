@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'package:english_app/core/services/tests_service.dart';
+import 'package:english_app/core/services/user_service.dart'; // Import UserService
 import 'package:english_app/models/question_model.dart';
-import 'package:flutter/material.dart';
 import 'package:english_app/models/test_model.dart';
+import 'package:english_app/models/user_model.dart'; // Import UserModel
+import 'package:english_app/ui/home/test_result_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // For userId
 
 class TestDetailScreen extends StatefulWidget {
   final Test test;
@@ -20,16 +24,46 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
   Map<int, int?> selectedAnswers = {};
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isSubmitting = false;
+  final TestApiService _testService = TestApiService();
+  late DateTime startTime;
+  int? userId;
+  UserModel? user;
 
   @override
   void initState() {
     super.initState();
     remainingSeconds = widget.test.durationMinutes * 60;
+    startTime = DateTime.now();
+    _fetchUserIdAndInfo();
     startTimer();
   }
 
+  Future<void> _fetchUserIdAndInfo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final fetchedUserId = prefs.getString('userId');
+      final int? userIdInt =
+          fetchedUserId != null ? int.tryParse(fetchedUserId) : null;
+      if (fetchedUserId == null) {
+        throw Exception('User ID not found. Please log in.');
+      }
+
+      final fetchedUser = await UserService.fetchUserInfo(userIdInt!);
+
+      setState(() {
+        userId = userIdInt;
+        user = fetchedUser;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching user info: ${e.toString()}')),
+      );
+    }
+  }
+
   void startTimer() {
-    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (remainingSeconds <= 0) {
         timer.cancel();
         _submitTest();
@@ -42,12 +76,20 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
   }
 
   String formatTime(int seconds) {
-    int minutes = seconds ~/ 60;
-    int secs = seconds % 60;
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   Future<void> _submitTest() async {
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('User ID not available. Please log in again.')),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -55,20 +97,37 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
     try {
       final durationSeconds =
           widget.test.durationMinutes * 60 - remainingSeconds;
-      final testService = TestApiService();
-      await testService.submitTestResults(
+
+      await _testService.submitTestResults(
         testId: widget.test.id,
         selectedAnswers: selectedAnswers,
         durationSeconds: durationSeconds,
+        userId: userId!,
+        startTime: startTime,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Test submitted successfully!')),
+      int score = 0;
+      for (var entry in selectedAnswers.entries) {
+        // Placeholder logic: assume even-indexed answers are correct
+        if (entry.value != null && entry.value! % 2 == 0) {
+          score++;
+        }
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TestResultScreen(
+            testTitle: widget.test.title,
+            score: score,
+            totalQuestions: widget.test.questionCount,
+            durationSeconds: durationSeconds,
+          ),
+        ),
       );
-      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit: ${e.toString()}')),
+        SnackBar(content: Text('Failed to submit test: ${e.toString()}')),
       );
     } finally {
       setState(() {
@@ -84,7 +143,7 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
       await _audioPlayer.play(UrlSource(url));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to play audio: $e')),
+        SnackBar(content: Text('Failed to play audio: ${e.toString()}')),
       );
     }
   }
@@ -103,11 +162,11 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
         title: Text(widget.test.title),
         actions: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Center(
               child: Text(
                 formatTime(remainingSeconds),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -117,11 +176,11 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             _buildTestInfo(),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ...widget.test.questions.asMap().entries.map((entry) {
               final index = entry.key;
               final question = entry.value;
@@ -135,27 +194,28 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text('Submit Test'),
-              content: Text('Are you sure you want to submit your answers?'),
+              title: const Text('Submit Test'),
+              content:
+                  const Text('Are you sure you want to submit your answers?'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
+                  child: const Text('Cancel'),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     _submitTest();
                   },
-                  child: Text('Submit'),
+                  child: const Text('Submit'),
                 ),
               ],
             ),
           );
         },
         child: _isSubmitting
-            ? CircularProgressIndicator(color: Colors.white)
-            : Icon(Icons.check),
+            ? const CircularProgressIndicator(color: Colors.white)
+            : const Icon(Icons.check),
       ),
     );
   }
@@ -163,18 +223,18 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
   Widget _buildTestInfo() {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Test Information',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Divider(),
+            const Divider(),
             Text('Type: ${widget.test.testType}'),
             Text('Duration: ${widget.test.durationMinutes} minutes'),
             Text('Questions: ${widget.test.questionCount}'),
@@ -187,51 +247,50 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
 
   Widget _buildQuestionCard(Question question, int questionIndex) {
     return Card(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Question ${questionIndex + 1} (Part ${question.part})',
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.purple,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               question.content,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
             if (question.audioUrl != null) ...[
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () => _playAudio(question.audioUrl),
-                icon: Icon(Icons.volume_up),
-                label: Text('Play Audio'),
+                icon: const Icon(Icons.volume_up),
+                label: const Text('Play Audio'),
               ),
             ],
             if (question.imageUrl != null) ...[
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Image.network(
                 question.imageUrl!,
                 height: 150,
                 errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.broken_image, size: 50),
+                    const Icon(Icons.broken_image, size: 50),
               ),
             ],
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             ...question.answers.map((answer) {
-              final answerIndex = question.answers.indexOf(answer);
               return RadioListTile<int>(
                 title: Text(answer.content),
-                value: answerIndex,
-                groupValue: selectedAnswers[questionIndex],
+                value: answer.id,
+                groupValue: selectedAnswers[question.id],
                 onChanged: (value) {
                   setState(() {
-                    selectedAnswers[questionIndex] = value;
+                    selectedAnswers[question.id] = value;
                   });
                 },
               );

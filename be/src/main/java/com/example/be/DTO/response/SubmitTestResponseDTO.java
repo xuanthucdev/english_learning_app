@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class SubmitTestResponse {
+public class SubmitTestResponseDTO {
     private Long testId;
     private Long userId;
     private int score;

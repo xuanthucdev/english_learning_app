@@ -1,11 +1,10 @@
 package com.example.be.controllers;
 
-import com.example.be.DTO.request.SubmitTestRequest;
-import com.example.be.DTO.response.SubmitTestResponse;
-import com.example.be.DTO.response.TestDetailResponse;
-import com.example.be.DTO.response.TestReponseDto;
+import com.example.be.DTO.request.SubmitTestRequestDTO;
+import com.example.be.DTO.response.SubmitTestResponseDTO;
+import com.example.be.DTO.response.TestDetailResponseDTO;
+import com.example.be.DTO.response.TestReponseDTO;
 import com.example.be.database.entities.Test;
-import com.example.be.database.enums.TestType;
 import com.example.be.services.TestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -25,19 +24,19 @@ public class TestController {
 
 
     @GetMapping("/fulltest")
-    public ResponseEntity<List<TestReponseDto>> getFullTests() {
-        List<TestReponseDto> fullTests = testService.getFullTestsDTO();
+    public ResponseEntity<List<TestReponseDTO>> getFullTests() {
+        List<TestReponseDTO> fullTests = testService.getFullTestsDTO();
         return ResponseEntity.ok(fullTests);
 
     }
     @GetMapping("/aptitudetest")
-    public ResponseEntity<List<TestReponseDto>> getAptitudeTests( ) {
-        List<TestReponseDto> apTests = testService.getAPTestsDTO();
+    public ResponseEntity<List<TestReponseDTO>> getAptitudeTests( ) {
+        List<TestReponseDTO> apTests = testService.getAPTestsDTO();
         return ResponseEntity.ok(apTests);
     }
     @GetMapping("/minitest")
-    public ResponseEntity<List<TestReponseDto>> getMiniTests() {
-        List<TestReponseDto> miniTests = testService.getMiniTestsDTO();
+    public ResponseEntity<List<TestReponseDTO>> getMiniTests() {
+        List<TestReponseDTO> miniTests = testService.getMiniTestsDTO();
         return ResponseEntity.ok(miniTests);
     }
 
@@ -70,15 +69,15 @@ public class TestController {
         }
     }
     @GetMapping("/{testId}")
-    public ResponseEntity<TestDetailResponse> getTestDetails(@PathVariable Long testId) {
-        TestDetailResponse response = testService.getTestDetails(testId);
+    public ResponseEntity<TestDetailResponseDTO> getTestDetails(@PathVariable Long testId) {
+        TestDetailResponseDTO response = testService.getTestDetails(testId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{testId}/submit")
-    public ResponseEntity<SubmitTestResponse> submitTest(@PathVariable Long testId,
-                                                         @RequestBody SubmitTestRequest request) {
-        SubmitTestResponse response = testService.submitTest(testId, request);
+    public ResponseEntity<SubmitTestResponseDTO> submitTest(@PathVariable Long testId,
+                                                            @RequestBody SubmitTestRequestDTO request) {
+        SubmitTestResponseDTO response = testService.submitTest(testId, request);
         return ResponseEntity.ok(response);
     }
 }

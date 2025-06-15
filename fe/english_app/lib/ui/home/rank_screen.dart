@@ -1,287 +1,156 @@
+import 'package:english_app/core/services/ranked_service.dart';
+import 'package:english_app/models/ranked_model.dart';
 import 'package:flutter/material.dart';
 
-class RankScreen extends StatelessWidget {
-  // Sample ranking data
-  final List<RankedUser> rankedUsers = [
-    RankedUser(
-      rank: 1,
-      name: 'Emma Wilson',
-      score: 950,
-      avatar: Icons.person,
-    ),
-    RankedUser(
-      rank: 2,
-      name: 'Liam Brown',
-      score: 920,
-      avatar: Icons.person,
-    ),
-    RankedUser(
-      rank: 3,
-      name: 'Sophia Nguyen',
-      score: 890,
-      avatar: Icons.person,
-    ),
-    RankedUser(
-      rank: 4,
-      name: 'James Lee',
-      score: 850,
-      avatar: Icons.person,
-    ),
-    RankedUser(
-      rank: 5,
-      name: 'Olivia Smith',
-      score: 820,
-      avatar: Icons.person,
-    ),
-  ];
+class RankScreen extends StatefulWidget {
+  @override
+  _RankScreenState createState() => _RankScreenState();
+}
+
+class _RankScreenState extends State<RankScreen> {
+  late Future<List<RankedUser>> _rankingFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _rankingFuture = RankService.fetchRanking();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Leaderboard',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 26,
-            color: Colors.white,
-            letterSpacing: 1.2,
-          ),
-        ),
+        title: const Text('Leaderboard'),
         backgroundColor: Colors.purple.shade800,
-        elevation: 0,
         centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.purple.shade800, Colors.purple.shade600],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.purple.shade100, Colors.white],
-          ),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header section
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Top Performers',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.purple.shade900,
-                        letterSpacing: 1.0,
+      body: FutureBuilder<List<RankedUser>>(
+        future: _rankingFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final rankedUsers = snapshot.data!;
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    children: const [
+                      Text(
+                        'Top Performers',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Celebrating the best in skill tests!',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                        fontStyle: FontStyle.italic,
+                      SizedBox(height: 4),
+                      Text(
+                        'Celebrating the best in skill tests!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              // Podium section with constrained height
-              SizedBox(
-                height: MediaQuery.of(context).size.height *
-                    0.3, // 30% of screen height
-                child: _buildPodium(context),
-              ),
-              // Leaderboard list
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: rankedUsers.length - 3, // Start from 4th place
-                  itemBuilder: (context, index) {
-                    final user = rankedUsers[index + 3];
-                    return _buildRankCard(context, user, index + 3);
-                  },
+                const SizedBox(height: 20),
+                _buildPodium(context, rankedUsers),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount:
+                        (rankedUsers.length > 3) ? rankedUsers.length - 3 : 0,
+                    itemBuilder: (context, index) {
+                      final user = rankedUsers[index + 3];
+                      return _buildRankCard(user);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20), // Extra padding at the bottom
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildPodium(BuildContext context) {
+  Widget _buildPodium(BuildContext context, List<RankedUser> users) {
+    // Đảm bảo có ít nhất 1 người
+    if (users.isEmpty) return const SizedBox();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        if (rankedUsers.length > 1)
-          _buildPodiumItem(context, rankedUsers[1], 2, 0.6), // 2nd place
-        if (rankedUsers.isNotEmpty)
-          _buildPodiumItem(context, rankedUsers[0], 1, 0.8), // 1st place
-        if (rankedUsers.length > 2)
-          _buildPodiumItem(context, rankedUsers[2], 3, 0.5), // 3rd place
+        if (users.length > 1) _buildPodiumItem(users[1], 0.6), // Hạng 2
+        _buildPodiumItem(users[0], 0.8), // Hạng 1
+        if (users.length > 2) _buildPodiumItem(users[2], 0.5), // Hạng 3
       ],
     );
   }
 
-  Widget _buildPodiumItem(
-      BuildContext context, RankedUser user, int rank, double heightFactor) {
-    Color rankColor = rank == 1
-        ? Colors.purple.shade900
-        : rank == 2
-            ? Colors.purple.shade700
-            : Colors.purple.shade500;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      width: 100,
-      height: MediaQuery.of(context).size.height *
-          0.3 *
-          heightFactor, // Dynamic height
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.purple.shade700,
-            child: Icon(
-              user.avatar,
-              size: 32,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            user.name,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.purple.shade900,
-            ),
-            textAlign: TextAlign.center,
+  Widget _buildPodiumItem(RankedUser user, double heightFactor) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 30,
+          backgroundColor: Colors.purple.shade700,
+          child: const Icon(Icons.person, color: Colors.white, size: 32),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          user.userName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
             overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            '${user.score} pts',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [rankColor, rankColor.withOpacity(0.7)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(10)),
-              ),
-              child: Center(
-                child: Text(
-                  '$rank',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRankCard(BuildContext context, RankedUser user, int index) {
-    return AnimatedOpacity(
-      opacity: 1.0,
-      duration: const Duration(milliseconds: 500),
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
         ),
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        color: Colors.purple.shade50,
-        child: ListTile(
-          leading: CircleAvatar(
-            radius: 25,
-            backgroundColor: Colors.purple.shade700,
-            child: Icon(
-              user.avatar,
-              color: Colors.white,
-              size: 28,
-            ),
+        Text('${user.score} pts'),
+        const SizedBox(height: 6),
+        Container(
+          height: 80 * heightFactor,
+          width: 60,
+          decoration: BoxDecoration(
+            color: Colors.purple.shade300,
+            borderRadius: BorderRadius.circular(10),
           ),
-          title: Text(
-            user.name,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          subtitle: Text(
-            'Score: ${user.score}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          trailing: CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.purple.shade300,
+          child: Center(
             child: Text(
               '${user.rank}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 18, color: Colors.white),
             ),
           ),
-          onTap: () {
-            // Navigate to user profile or details (optional)
-          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRankCard(RankedUser user) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.purple.shade700,
+          child: const Icon(Icons.person, color: Colors.white),
+        ),
+        title: Text(user.userName),
+        subtitle: Text('Score: ${user.score}'),
+        trailing: CircleAvatar(
+          backgroundColor: Colors.purple.shade300,
+          child:
+              Text('${user.rank}', style: const TextStyle(color: Colors.white)),
         ),
       ),
     );
   }
-}
-
-class RankedUser {
-  final int rank;
-  final String name;
-  final int score;
-  final IconData avatar;
-
-  RankedUser({
-    required this.rank,
-    required this.name,
-    required this.score,
-    required this.avatar,
-  });
 }

@@ -6,13 +6,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class SubmitTestRequest {
+public class SubmitTestRequestDTO {
     private Long userId;
     private List<UserAnswerDTO> answers;
     private LocalDateTime startTime;
 
     @Data
-    public class UserAnswerDTO {
+    public static class UserAnswerDTO {
         private Long questionId;
         private Long answerId;
     }

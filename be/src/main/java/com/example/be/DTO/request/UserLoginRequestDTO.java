@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @Getter
 @Setter
-public class UserLoginRequestDto {
+public class UserLoginRequestDTO {
     @NotBlank(message = "Email must not be blank")
     private String email;
     @NotBlank(message = "Password must not be blank")

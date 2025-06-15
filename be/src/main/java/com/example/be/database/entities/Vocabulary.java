@@ -5,10 +5,11 @@ import com.example.be.database.enums.ToeicFrequency;
 import com.example.be.database.enums.Topic;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-
+@Getter
+@Setter
 @Entity
 @Table(name = "vocabularies")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -36,8 +37,7 @@ public class Vocabulary {
     @Column(name = "toeic_frequency")
     private ToeicFrequency toeicFrequency;
 
-    @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserVocabProgress> userProgresses = new ArrayList<>();
+
 
 
 

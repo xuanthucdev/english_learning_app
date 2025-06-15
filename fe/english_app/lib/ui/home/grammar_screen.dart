@@ -1,39 +1,21 @@
+import 'package:english_app/core/services/grammar_service.dart';
+import 'package:english_app/models/grammar_model.dart';
 import 'package:flutter/material.dart';
 
-class GrammarScreen extends StatelessWidget {
-  // Sample grammar data
-  final List<GrammarTopic> grammarTopics = [
-    GrammarTopic(
-      title: 'Present Simple',
-      description: 'Used to describe habits, general truths, and routines.',
-      examples: [
-        'She walks to school every day.',
-        'The sun rises in the east.',
-      ],
-      explanation:
-          'The present simple tense is formed using the base verb for I/you/we/they, and adding -s or -es for he/she/it.',
-    ),
-    GrammarTopic(
-      title: 'Past Simple',
-      description: 'Used to describe completed actions in the past.',
-      examples: [
-        'They visited Paris last summer.',
-        'He didn’t play football yesterday.',
-      ],
-      explanation:
-          'The past simple is typically formed by adding -ed to regular verbs, while irregular verbs have unique forms.',
-    ),
-    GrammarTopic(
-      title: 'Future Simple',
-      description: 'Used to talk about future actions or predictions.',
-      examples: [
-        'We will travel to Japan next year.',
-        'It will probably rain this afternoon.',
-      ],
-      explanation:
-          'The future simple is formed with "will" + base verb for all subjects.',
-    ),
-  ];
+class GrammarScreen extends StatefulWidget {
+  @override
+  _GrammarScreenState createState() => _GrammarScreenState();
+}
+
+class _GrammarScreenState extends State<GrammarScreen> {
+  late Future<List<Grammar>> _grammarFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _grammarFuture =
+        GrammarService.fetchGrammarTopics(); // ← Gọi API lấy từ vựng
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,177 +23,118 @@ class GrammarScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Grammar Lessons',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
         backgroundColor: Colors.purple,
-        elevation: 0,
+        elevation: 3,
         centerTitle: true,
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
+            colors: [Colors.purple.shade100, Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.purple.shade100, Colors.white],
           ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              Text(
-                'Learn English Grammar',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.purple.shade700,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Explore grammar topics with examples and explanations.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: grammarTopics.length,
-                  itemBuilder: (context, index) {
-                    final topic = grammarTopics[index];
-                    return _buildGrammarCard(context, topic);
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Navigate to a quiz or practice section
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 15,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Text(
-                    'Practice Quiz',
+          child: FutureBuilder<List<Grammar>>(
+            future: _grammarFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              final grammarList = snapshot.data!;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  Text(
+                    'Learn English Grammar',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.deepPurple.shade700,
                     ),
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Explore grammar topics with examples and explanations.',
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: grammarList.length,
+                      itemBuilder: (context, index) {
+                        return _buildGrammarCard(grammarList[index]);
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildGrammarCard(BuildContext context, GrammarTopic topic) {
+  Widget _buildGrammarCard(Grammar word) {
     return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ExpansionTile(
         leading: CircleAvatar(
-          radius: 25,
           backgroundColor: Colors.purple.shade100,
-          child: Icon(
-            Icons.school,
-            size: 28,
-            color: Colors.purple.shade700,
-          ),
+          child: Icon(Icons.menu_book, color: Colors.purple),
         ),
         title: Text(
-          topic.title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          word.word,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          topic.description,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
+          word.topic,
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildSectionTitle(Icons.info_outline, 'Definition'),
+                const SizedBox(height: 4),
                 Text(
-                  'Explanation:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple.shade700,
-                  ),
+                  word.definition,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                _buildSectionTitle(Icons.lightbulb_outline, 'Example'),
+                const SizedBox(height: 6),
                 Text(
-                  topic.explanation,
+                  '“${word.example}”',
                   style: TextStyle(
+                    fontStyle: FontStyle.italic,
                     fontSize: 14,
                     color: Colors.grey.shade800,
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  'Examples:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple.shade700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...topic.examples.map(
-                  (example) => Padding(
-                    padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '• ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.purple.shade700,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            example,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                _buildSectionTitle(Icons.tag, 'Additional Info'),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    _buildBadge('Difficulty: ${word.difficulty}'),
+                    _buildBadge('TOEIC: ${word.toeicFrequency}'),
+                  ],
                 ),
               ],
             ),
@@ -220,18 +143,36 @@ class GrammarScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-class GrammarTopic {
-  final String title;
-  final String description;
-  final List<String> examples;
-  final String explanation;
+  Widget _buildSectionTitle(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.deepPurple.shade700),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Colors.purple.shade100,
+          ),
+        ),
+      ],
+    );
+  }
 
-  GrammarTopic({
-    required this.title,
-    required this.description,
-    required this.examples,
-    required this.explanation,
-  });
+  Widget _buildBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.purple.shade100),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: Colors.deepPurple),
+      ),
+    );
+  }
 }

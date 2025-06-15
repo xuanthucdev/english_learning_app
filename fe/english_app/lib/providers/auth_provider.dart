@@ -1,20 +1,27 @@
 // providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:english_app/core/services/user_service.dart';
+import 'package:english_app/models/user_model.dart';
 import '../core/services/auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
-  String? _userId;
-  String? _email;
-  String? get userId => _userId;
-  String? get email => _email;
+  final UserService _userService = UserService();
+  UserModel? _user;
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
   String? _errorMessage;
+
+  // Getters
+  UserModel? get user => _user;
+  String? get email => _user?.email;
+  String? get fullName => _user?.fullName;
+  String? get phone => _user?.phone;
+  String? get avatar => _user?.avatar;
+  bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  // Setters
   void setError(String? message) {
     _errorMessage = message;
     notifyListeners();
@@ -30,6 +37,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Sign up
   Future<bool> signUp({
     required String fullName,
     required String email,
@@ -50,6 +58,7 @@ class AuthProvider with ChangeNotifier {
       setLoading(false);
 
       if (result['success'] == true) {
+        await loadUserData();
         return true;
       } else {
         setError(result['message']);
@@ -62,10 +71,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> login(
-    String email,
-    String password,
-  ) async {
+  Future<bool> login(String email, String password) async {
     setLoading(true);
     setError(null);
 
@@ -78,13 +84,10 @@ class AuthProvider with ChangeNotifier {
       setLoading(false);
 
       if (result['success'] == true) {
-        _userId = result['data']['user']['id'].toString();
-        _email = result['data']['user']['email'];
+        final userId = result['data']['user']['id'].toString();
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', _userId!);
-        await prefs.setString('email', _email!);
-        notifyListeners();
-
+        await prefs.setString('userId', userId);
+        await loadUserData();
         return true;
       } else {
         setError(result['message']);
@@ -98,18 +101,49 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    _userId = prefs.getString('userId');
-    _email = prefs.getString('email');
-    notifyListeners();
+    setLoading(true);
+    setError(null);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId');
+
+      if (userId != null) {
+        final user = await UserService.fetchUserInfo(int.parse(userId));
+        _user = user;
+      } else {
+        _user = null;
+      }
+
+      notifyListeners();
+    } catch (e) {
+      print('Error loading user data: $e');
+      setError('Không thể tải thông tin người dùng');
+      _user = null;
+    } finally {
+      setLoading(false);
+    }
   }
 
+  // Logout
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('userId');
-    await prefs.remove('email');
-    _userId = null;
-    _email = null;
-    notifyListeners();
+    setLoading(true);
+    setError(null);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('userId');
+      await prefs.remove('email');
+      _user = null;
+      notifyListeners();
+    } catch (e) {
+      setError('Có lỗi xảy ra khi đăng xuất');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<String?> getToken() async {
+    return await AuthService.getToken(); // gọi hàm từ AuthService
   }
 }

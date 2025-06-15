@@ -23,7 +23,7 @@ class Question {
 
   factory Question.fromJson(Map<String, dynamic> json) {
     return Question(
-      id: json['id'] ?? 0,
+      id: json['id'],
       content: json['content'] ?? '',
       audioUrl: json['audioUrl'],
       imageUrl: json['imageUrl'],

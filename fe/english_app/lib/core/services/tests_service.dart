@@ -13,19 +13,17 @@ class TestApiService {
   Future<List<Test>> _fetchTests(String endpoint) async {
     try {
       final uri = Uri.parse('$baseUrl/$endpoint');
-      print('Requesting API: $uri'); // Debug URL
+      print('Requesting API: $uri');
 
       final response = await client.get(uri).timeout(Duration(seconds: 15));
 
       print('API Response Status: ${response.statusCode}');
-      print(
-          'Response Body Sample: ${response.body.substring(0, 100)}...'); // Xem 100 ký tự đầu
+      print('Response Body Sample: ${response.body.substring(0, 100)}...');
 
       if (response.statusCode == 200) {
         try {
           final dynamic decoded = json.decode(response.body);
 
-          // Xử lý nhiều định dạng response khác nhau
           if (decoded is List) {
             return decoded.map((json) => Test.fromJson(json)).toList();
           } else if (decoded['data'] is List) {
@@ -95,41 +93,36 @@ class TestApiService {
     required int testId,
     required Map<int, int?> selectedAnswers,
     required int durationSeconds,
+    required int userId,
+    required DateTime startTime,
   }) async {
-    try {
-      final uri = Uri.parse('$baseUrl/$testId/submit');
-      print('Submitting test results to: $uri');
+    final uri = Uri.parse('$baseUrl/$testId/submit');
 
-      // Chuẩn bị dữ liệu để gửi
-      final answersMap = selectedAnswers.map((questionIndex, answerIndex) =>
-          MapEntry(questionIndex.toString(), answerIndex.toString()));
+    final answersList = selectedAnswers.entries
+        .where((entry) => entry.value != null)
+        .map((entry) => {
+              'questionId': entry.key,
+              'answerId': entry.value,
+            })
+        .toList();
 
-      final body = json.encode({
-        'answers': answersMap,
-        'duration': durationSeconds,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
+    final body = json.encode({
+      'userId': userId,
+      'startTime': startTime.toIso8601String(),
+      'answers': answersList,
+    });
 
-      print('Submission Body: $body');
+    print('📤 Submission Body: $body');
 
-      final response = await client
-          .post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: body,
-          )
-          .timeout(Duration(seconds: 15));
+    final response = await client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
 
-      if (response.statusCode != 200) {
-        throw Exception('Submission failed: ${response.statusCode}');
-      }
-
-      print('Submission successful');
-    } on TimeoutException {
-      throw Exception('Submission timeout. Please try again.');
-    } catch (e) {
-      print('Error submitting test: $e');
-      throw Exception('Failed to submit test results');
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Submission failed: ${response.statusCode}\n${response.body}');
     }
   }
 }

@@ -3,7 +3,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Data
-public class PasswordResetRequestDto {
+public class PasswordResetRequestDTO {
     @NotBlank(message = "Token is required")
     private String token;
 
