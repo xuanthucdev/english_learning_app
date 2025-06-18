@@ -1,4 +1,3 @@
-// providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:english_app/core/services/user_service.dart';
@@ -37,7 +36,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Sign up
+  // SIGN UP
   Future<bool> signUp({
     required String fullName,
     required String email,
@@ -45,39 +44,13 @@ class AuthProvider with ChangeNotifier {
     required String password,
   }) async {
     setLoading(true);
-    setError(null);
+    clearError();
 
     try {
       final result = await _authService.signUp(
         fullName: fullName,
         email: email,
         phone: phone,
-        password: password,
-      );
-
-      setLoading(false);
-
-      if (result['success'] == true) {
-        await loadUserData();
-        return true;
-      } else {
-        setError(result['message']);
-        return false;
-      }
-    } catch (e) {
-      setLoading(false);
-      setError('Có lỗi xảy ra, vui lòng thử lại');
-      return false;
-    }
-  }
-
-  Future<bool> login(String email, String password) async {
-    setLoading(true);
-    setError(null);
-
-    try {
-      final result = await _authService.login(
-        email: email,
         password: password,
       );
 
@@ -100,9 +73,48 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // LOGIN
+  Future<bool> login(String email, String password) async {
+    setLoading(true);
+    clearError();
+
+    try {
+      final result = await _authService.login(
+        email: email,
+        password: password,
+      );
+
+      setLoading(false);
+
+      if (result['success'] == true) {
+        final userId = result['data']['user']['id'].toString();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userId', userId);
+
+        // Lưu accessToken nếu có
+        final token = result['data']['accessToken'];
+        if (token != null) {
+          await prefs.setString('accessToken', token);
+        }
+
+        await loadUserData();
+        return true;
+      } else {
+        setError(result['message']);
+        return false;
+      }
+    } catch (e) {
+      setLoading(false);
+      setError('Có lỗi xảy ra, vui lòng thử lại');
+      print('Login error: $e');
+      return false;
+    }
+  }
+
+  // LOAD USER DATA
   Future<void> loadUserData() async {
     setLoading(true);
-    setError(null);
+    clearError();
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -110,8 +122,14 @@ class AuthProvider with ChangeNotifier {
 
       if (userId != null) {
         final user = await UserService.fetchUserInfo(int.parse(userId));
-        _user = user;
+        if (user != null) {
+          _user = user;
+        } else {
+          print('UserService returned null');
+          _user = null;
+        }
       } else {
+        print('UserID not found in SharedPreferences');
         _user = null;
       }
 
@@ -125,25 +143,27 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Logout
+  // LOGOUT
   Future<void> logout() async {
     setLoading(true);
-    setError(null);
+    clearError();
 
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('userId');
-      await prefs.remove('email');
+      await prefs.remove('accessToken');
       _user = null;
       notifyListeners();
     } catch (e) {
       setError('Có lỗi xảy ra khi đăng xuất');
+      print('Logout error: $e');
     } finally {
       setLoading(false);
     }
   }
 
   Future<String?> getToken() async {
-    return await AuthService.getToken(); // gọi hàm từ AuthService
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('accessToken');
   }
 }

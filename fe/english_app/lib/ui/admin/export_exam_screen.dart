@@ -27,7 +27,7 @@ class _ExportExamScreenState extends State<ExportExamScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.107:8083/api/tests/$_testId/export'),
+        Uri.parse('http://10.50.19.36:8083/api/tests/$_testId/export'),
       );
       if (response.statusCode == 200) {
         // Lấy đường dẫn thư mục tải về

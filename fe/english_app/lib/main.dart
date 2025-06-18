@@ -14,27 +14,27 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      child: MyEnglishApp(),
+      child: const MyApp(),
     ),
   );
 }
 
-class MyEnglishApp extends StatelessWidget {
-  const MyEnglishApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "English App",
-      home: LoginScreen(),
       initialRoute: '/login',
       routes: {
         '/login': (context) => LoginScreen(),
-        '/signup': (context) => RegisterScreen(),
+        '/signup': (context) => const RegisterScreen(),
         '/admin': (context) => AdminScreen(),
         '/import_exam': (context) => const ImportExamScreen(),
         '/export_exam': (context) => const ExportExamScreen(),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }

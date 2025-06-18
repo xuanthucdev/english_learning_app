@@ -4,7 +4,7 @@ import 'dart:io';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, String> userInfo;
-  final String? avatarPath; // Thêm thuộc tính để nhận đường dẫn avatar hiện tại
+  final String? avatarPath; 
 
   const EditProfileScreen({required this.userInfo, this.avatarPath, super.key});
 
@@ -17,7 +17,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   final _formKey = GlobalKey<FormState>();
-  File? _selectedImage; // Lưu ảnh đã chọn
+  File? _selectedImage; 
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -26,7 +26,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: widget.userInfo['Name']);
     _emailController = TextEditingController(text: widget.userInfo['Email']);
     _phoneController = TextEditingController(text: widget.userInfo['Phone']);
-    // Nếu có avatarPath, khởi tạo _selectedImage
+
     if (widget.avatarPath != null && widget.avatarPath!.isNotEmpty) {
       _selectedImage = File(widget.avatarPath!);
     }

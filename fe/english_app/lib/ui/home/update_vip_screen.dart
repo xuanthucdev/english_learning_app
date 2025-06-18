@@ -36,7 +36,7 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
     try {
       final response = await http.post(
         Uri.parse(
-            'http://192.168.0.107:8083/users/$userId/upgrade-vip?duration=$duration'),
+            'http://10.50.19.36:8083/users/$userId/upgrade-vip?duration=$duration'),
         headers: {'Content-Type': 'application/json'},
       );
 

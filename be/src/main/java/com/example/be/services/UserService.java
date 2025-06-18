@@ -72,7 +72,7 @@ public class UserService {
         updatedDTO.setFullName(updatedUser.getFullName());
         updatedDTO.setPhone(updatedUser.getPhone());
         updatedDTO.setEmail(updatedUser.getEmail());
-        updatedDTO.setAvatar(updatedDTO.getAvatar());
+        updatedDTO.setAvatar(updatedUser.getAvatar());
         return updatedDTO;
     }
     public File uploadAvatar(Long id, MultipartFile file) {

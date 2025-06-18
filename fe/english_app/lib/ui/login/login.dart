@@ -185,11 +185,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               isSuccess: true,
                             );
 
-                            Navigator.pushReplacement(
+                            Navigator.pushReplacementNamed(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => HomeScreen(),
-                              ),
+                              '/home',
+                              
                             );
                           }
                         }

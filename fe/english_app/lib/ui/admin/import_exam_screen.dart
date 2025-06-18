@@ -31,7 +31,7 @@ class _ImportExamScreenState extends State<ImportExamScreen> {
 
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://192.168.0.107:8083/api/tests/import'),
+      Uri.parse('http://10.50.19.36:8083/api/tests/import'),
     );
     request.files.add(await http.MultipartFile.fromPath('file', _filePath!));
 

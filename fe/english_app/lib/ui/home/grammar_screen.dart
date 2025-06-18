@@ -14,7 +14,7 @@ class _GrammarScreenState extends State<GrammarScreen> {
   void initState() {
     super.initState();
     _grammarFuture =
-        GrammarService.fetchGrammarTopics(); // ← Gọi API lấy từ vựng
+        GrammarService.fetchGrammarTopics(); 
   }
 
   @override
