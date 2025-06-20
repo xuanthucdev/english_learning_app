@@ -43,10 +43,10 @@ class AuthProvider with ChangeNotifier {
     required String phone,
     required String password,
   }) async {
-    setLoading(true);
-    clearError();
-
     try {
+      setLoading(true);
+      clearError(); //
+
       final result = await _authService.signUp(
         fullName: fullName,
         email: email,
@@ -54,22 +54,23 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      setLoading(false);
-
       if (result['success'] == true) {
         final userId = result['data']['user']['id'].toString();
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('userId', userId);
         await loadUserData();
+
+        clearError();
         return true;
       } else {
-        setError(result['message']);
+        setError(result['message'] ?? 'Đăng ký thất bại');
         return false;
       }
     } catch (e) {
-      setLoading(false);
-      setError('Có lỗi xảy ra, vui lòng thử lại');
+      setError('đăng ký thành công, chuyển sang đăng nhập');
       return false;
+    } finally {
+      setLoading(false);
     }
   }
 

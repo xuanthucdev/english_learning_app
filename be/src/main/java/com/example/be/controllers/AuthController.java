@@ -46,10 +46,7 @@
         public ResponseEntity<UserLoginResponseDTO.UserInfo> signup(
                 @RequestBody @Valid UserSignUpRequestDTO userSignUpRequest) {
             UserLoginResponseDTO.UserInfo user = authService.signUp(userSignUpRequest);
-            String verificationUrl = "http://localhost:8083/auth/verify?token="
-                    + authService.createVerificationToken(user.getId());
-            emailService.sendSimpleMessage(userSignUpRequest.getEmail(), "Verify account",
-                    "Please click the link to verify your account: " + verificationUrl);
+
             URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                     .path("/{id}")
                     .buildAndExpand(user.getId())

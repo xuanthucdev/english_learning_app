@@ -1,10 +1,12 @@
+import 'package:english_app/core/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, String> userInfo;
-  final String? avatarPath; 
+  final String? avatarPath;
 
   const EditProfileScreen({required this.userInfo, this.avatarPath, super.key});
 
@@ -17,7 +19,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   final _formKey = GlobalKey<FormState>();
-  File? _selectedImage; 
+  File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -78,15 +80,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void _saveChanges() {
+  void _saveChanges() async {
     if (_formKey.currentState!.validate()) {
-      final updatedInfo = {
-        'Name': _nameController.text.trim(),
-        'Email': _emailController.text.trim(),
-        'Phone': _phoneController.text.trim(),
-        'AvatarPath': _selectedImage?.path ?? widget.avatarPath ?? '',
-      };
-      Navigator.pop(context, updatedInfo);
+      final prefs = await SharedPreferences.getInstance();
+      final userIdStr = prefs.getString('userId');
+
+      if (userIdStr == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy ID người dùng')),
+        );
+        return;
+      }
+
+      final userId = int.parse(userIdStr);
+      String avatarUrl = widget.avatarPath ?? '';
+
+      try {
+        if (_selectedImage != null) {
+          avatarUrl = await UserService.uploadAvatar(
+                userId: userId,
+                avatarFile: _selectedImage!,
+              ) ??
+              '';
+        }
+
+        await UserService().updateUser(
+          userId: userId,
+          fullName: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          email: _emailController.text.trim(), // thêm email
+          avatarUrl: avatarUrl,
+        );
+
+        final updatedInfo = {
+          'Name': _nameController.text.trim(),
+          'Email': _emailController.text.trim(),
+          'Phone': _phoneController.text.trim(),
+          'AvatarPath': _selectedImage?.path ?? widget.avatarPath ?? '',
+        };
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cập nhật thành công')),
+        );
+
+        Navigator.pop(context, updatedInfo);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi lưu thay đổi: $e')),
+        );
+      }
     }
   }
 
@@ -100,7 +142,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             fontWeight: FontWeight.bold,
             fontSize: 26,
             color: Colors.white,
-            letterSpacing: 1.2,
           ),
         ),
         backgroundColor: Colors.purple.shade800,
@@ -130,98 +171,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  Center(
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          onTap: _pickImage,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 500),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.purple.shade700,
-                                width: 4,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      Colors.purple.shade300.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 60,
-                              backgroundImage: _selectedImage != null
-                                  ? FileImage(_selectedImage!)
-                                  : widget.avatarPath != null &&
-                                          widget.avatarPath!.isNotEmpty
-                                      ? FileImage(File(widget.avatarPath!))
-                                      : null,
-                              backgroundColor: Colors.purple.shade200,
-                              child: _selectedImage == null &&
-                                      (widget.avatarPath == null ||
-                                          widget.avatarPath!.isEmpty)
-                                  ? Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Colors.purple.shade900,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _pickImage,
-                          child: Text(
-                            'Change Avatar',
-                            style: TextStyle(
-                              color: Colors.purple.shade700,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Edit Your Profile',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.purple.shade900,
-                          ),
-                        ),
-                      ],
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundImage: _selectedImage != null
+                          ? FileImage(_selectedImage!)
+                          : widget.avatarPath != null &&
+                                  widget.avatarPath!.isNotEmpty
+                              ? FileImage(File(widget.avatarPath!))
+                              : null,
+                      backgroundColor: Colors.purple.shade200,
+                      child: _selectedImage == null &&
+                              (widget.avatarPath == null ||
+                                  widget.avatarPath!.isEmpty)
+                          ? Icon(Icons.person,
+                              size: 60, color: Colors.purple.shade900)
+                          : null,
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  Text(
-                    'Personal Details',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple.shade900,
-                    ),
+                  TextButton(
+                    onPressed: _pickImage,
+                    child: Text('Change Avatar',
+                        style: TextStyle(
+                          color: Colors.purple.shade700,
+                          fontWeight: FontWeight.bold,
+                        )),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
                   _buildTextField(
                     controller: _nameController,
                     label: 'Name',
                     icon: Icons.person_outline,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your name';
-                      }
-                      return null;
-                    },
+                    validator: (value) =>
+                        value!.trim().isEmpty ? 'Please enter your name' : null,
                   ),
-                  const SizedBox(height: 16),
                   _buildTextField(
                     controller: _emailController,
                     label: 'Email',
@@ -230,53 +216,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter your email';
                       }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}')
                           .hasMatch(value)) {
-                        return 'Please enter a valid email';
+                        return 'Invalid email format';
                       }
                       return null;
                     },
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  const SizedBox(height: 16),
                   _buildTextField(
                     controller: _phoneController,
                     label: 'Phone',
                     icon: Icons.phone_outlined,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your phone number';
-                      }
-                      return null;
-                    },
+                    validator: (value) => value!.trim().isEmpty
+                        ? 'Please enter your phone'
+                        : null,
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 30),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: _saveChanges,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple.shade700,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 15,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 5,
-                      ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                  ElevatedButton(
+                    onPressed: _saveChanges,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple.shade700,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
                       ),
                     ),
+                    child: const Text('Save Changes',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18)),
                   ),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -294,17 +265,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     TextInputType? keyboardType,
   }) {
     return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      color: Colors.purple.shade50,
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: Colors.purple.shade700),
+          prefixIcon: Icon(icon, color: Colors.purple),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16.0),
         ),

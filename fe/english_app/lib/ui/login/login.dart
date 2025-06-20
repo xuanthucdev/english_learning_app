@@ -1,5 +1,7 @@
+import 'package:english_app/core/services/auth_service.dart';
 import 'package:english_app/providers/auth_provider.dart';
 import 'package:english_app/ui/home/home_screen.dart';
+import 'package:english_app/ui/login/reset_password_screen.dart';
 import 'package:english_app/ui/signup/signUp.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _resetEmailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _resetFormKey = GlobalKey<FormState>();
+  bool _isSendingReset = false;
 
   @override
   void dispose() {
@@ -31,41 +34,106 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Forgot Password'),
-          content: Form(
-            key: _resetFormKey,
-            child: AppTextField(
-              controller: _resetEmailController,
-              icon: Icons.email,
-              hintText: "Enter your email",
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter email';
-                }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value)) {
-                  return 'Invalid email';
-                }
-                return null;
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_resetFormKey.currentState!.validate()) {
-                  Navigator.pop(context);
-                }
-              },
-              child: Text('Send'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Center(
+                child: Text(
+                  'Reset Password',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ),
+              contentPadding: EdgeInsets.fromLTRB(24, 10, 24, 0),
+              content: Form(
+                key: _resetFormKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: 10),
+                    AppTextField(
+                      controller: _resetEmailController,
+                      icon: Icons.email,
+                      hintText: "Enter your email",
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter email';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
+                          return 'Invalid email';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actionsPadding: EdgeInsets.only(right: 16, bottom: 12),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: _isSendingReset
+                      ? null
+                      : () async {
+                          if (_resetFormKey.currentState!.validate()) {
+                            setStateDialog(() => _isSendingReset = true);
+
+                            final result =
+                                await AuthService().requestPasswordReset(
+                              _resetEmailController.text.trim(),
+                            );
+
+                            setStateDialog(() => _isSendingReset = false);
+                            Navigator.pop(context);
+
+                            CustomSnackBar.show(
+                              context,
+                              message: result['message'],
+                              isSuccess: result['success'],
+                            );
+
+                            if (result['success']) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ResetPasswordScreen(),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: _isSendingReset
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Send',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -188,7 +256,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             Navigator.pushReplacementNamed(
                               context,
                               '/home',
-                              
                             );
                           }
                         }

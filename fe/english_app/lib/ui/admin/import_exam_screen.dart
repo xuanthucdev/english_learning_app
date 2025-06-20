@@ -1,3 +1,4 @@
+import 'package:english_app/core/services/exam_service.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
@@ -29,29 +30,18 @@ class _ImportExamScreenState extends State<ImportExamScreen> {
   Future<void> _importFile() async {
     if (_filePath == null) return;
 
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('http://10.50.19.36:8083/api/tests/import'),
-    );
-    request.files.add(await http.MultipartFile.fromPath('file', _filePath!));
+    final result = await ExamService.importExam(_filePath!);
 
-    try {
-      var response = await request.send();
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exam Imported Successfully!')),
-        );
-        setState(() {
-          _filePath = null;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to import exam.')),
-        );
-      }
-    } catch (e) {
+    if (result['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error during import.')),
+        const SnackBar(content: Text('Exam Imported Successfully!')),
+      );
+      setState(() {
+        _filePath = null;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Failed to import exam.')),
       );
     }
   }

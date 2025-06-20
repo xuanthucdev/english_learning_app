@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:english_app/core/services/tests_service.dart';
-import 'package:english_app/core/services/user_service.dart'; // Import UserService
+import 'package:english_app/core/services/user_service.dart';
 import 'package:english_app/models/question_model.dart';
 import 'package:english_app/models/test_model.dart';
-import 'package:english_app/models/user_model.dart'; // Import UserModel
+import 'package:english_app/models/user_model.dart';
 import 'package:english_app/ui/home/test_result_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // For userId
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TestDetailScreen extends StatefulWidget {
   final Test test;
@@ -28,6 +28,13 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
   late DateTime startTime;
   int? userId;
   UserModel? user;
+  int currentPage = 0;
+  final int questionsPerPage = 5;
+  final ScrollController _scrollController = ScrollController();
+
+  // Audio state
+  bool _isPlaying = false;
+  String? _currentAudioUrl;
 
   @override
   void initState() {
@@ -38,19 +45,25 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
     startTimer();
   }
 
+  List<Question> _getPaginatedQuestions() {
+    final start = currentPage * questionsPerPage;
+    final end = start + questionsPerPage;
+    return widget.test.questions.sublist(
+      start,
+      end > widget.test.questions.length ? widget.test.questions.length : end,
+    );
+  }
+
   Future<void> _fetchUserIdAndInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-
       final fetchedUserId = prefs.getString('userId');
       final int? userIdInt =
           fetchedUserId != null ? int.tryParse(fetchedUserId) : null;
       if (fetchedUserId == null) {
         throw Exception('User ID not found. Please log in.');
       }
-
       final fetchedUser = await UserService.fetchUserInfo(userIdInt!);
-
       setState(() {
         userId = userIdInt;
         user = fetchedUser;
@@ -73,6 +86,14 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
         });
       }
     });
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   String formatTime(int seconds) {
@@ -108,7 +129,6 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
 
       int score = 0;
       for (var entry in selectedAnswers.entries) {
-        // Placeholder logic: assume even-indexed answers are correct
         if (entry.value != null && entry.value! % 2 == 0) {
           score++;
         }
@@ -136,11 +156,34 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
     }
   }
 
+  Future<void> _stopAudio() async {
+    try {
+      await _audioPlayer.stop();
+      setState(() {
+        _isPlaying = false;
+        _currentAudioUrl = null;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to stop audio: ${e.toString()}')),
+      );
+    }
+  }
+
   Future<void> _playAudio(String? url) async {
     if (url == null) return;
 
     try {
-      await _audioPlayer.play(UrlSource(url));
+      if (_isPlaying && _currentAudioUrl == url) {
+        await _stopAudio();
+      } else {
+        await _audioPlayer.stop();
+        await _audioPlayer.play(UrlSource(url));
+        setState(() {
+          _isPlaying = true;
+          _currentAudioUrl = url;
+        });
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to play audio: ${e.toString()}')),
@@ -152,11 +195,14 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
   void dispose() {
     timer?.cancel();
     _audioPlayer.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final totalPages = (widget.test.questions.length / questionsPerPage).ceil();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.test.title),
@@ -176,46 +222,82 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             _buildTestInfo(),
             const SizedBox(height: 20),
-            ...widget.test.questions.asMap().entries.map((entry) {
-              final index = entry.key;
+            ..._getPaginatedQuestions().asMap().entries.map((entry) {
+              final index = currentPage * questionsPerPage + entry.key;
               final question = entry.value;
               return _buildQuestionCard(question, index);
             }).toList(),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Submit Test'),
-              content:
-                  const Text('Are you sure you want to submit your answers?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: currentPage > 0
+                      ? () {
+                          setState(() => currentPage--);
+                          _scrollToTop();
+                        }
+                      : null,
+                  child: const Text('Previous'),
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _submitTest();
-                  },
-                  child: const Text('Submit'),
+                Text('Page ${currentPage + 1} of $totalPages'),
+                ElevatedButton(
+                  onPressed: (currentPage + 1) * questionsPerPage <
+                          widget.test.questions.length
+                      ? () {
+                          setState(() => currentPage++);
+                          _scrollToTop();
+                        }
+                      : null,
+                  child: const Text('Next'),
                 ),
               ],
             ),
-          );
-        },
-        child: _isSubmitting
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Icon(Icons.check),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                minimumSize: const Size.fromHeight(50),
+              ),
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Submit Test'),
+                          content: const Text(
+                              'Are you sure you want to submit your answers?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _submitTest();
+                              },
+                              child: const Text('Submit'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+              icon: const Icon(Icons.check),
+              label: _isSubmitting
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Submit Test'),
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
@@ -269,8 +351,16 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () => _playAudio(question.audioUrl),
-                icon: const Icon(Icons.volume_up),
-                label: const Text('Play Audio'),
+                icon: Icon(
+                  _isPlaying && _currentAudioUrl == question.audioUrl
+                      ? Icons.stop
+                      : Icons.play_arrow,
+                ),
+                label: Text(
+                  _isPlaying && _currentAudioUrl == question.audioUrl
+                      ? 'Stop Audio'
+                      : 'Play Audio',
+                ),
               ),
             ],
             if (question.imageUrl != null) ...[

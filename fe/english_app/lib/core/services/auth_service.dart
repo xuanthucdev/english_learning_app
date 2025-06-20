@@ -144,4 +144,95 @@ class AuthService {
       return {'success': false, 'message': 'Có lỗi xảy ra: ${e.toString()}'};
     }
   }
+
+  Future<Map<String, dynamic>> requestPasswordReset(String email) async {
+    try {
+      AppLogger.info('Requesting password reset for email: $email');
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/password/reset'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {'email': email},
+      ).timeout(const Duration(seconds: 30));
+
+      AppLogger.debug(
+          'Password reset response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': 'A reset link has been sent to your email.',
+        };
+      } else {
+        final data = jsonDecode(response.body);
+        final message = data['message'] ?? 'Failed to request password reset.';
+        AppLogger.warning('Reset failed: $message');
+        return {
+          'success': false,
+          'message': message,
+        };
+      }
+    } on TimeoutException catch (e) {
+      AppLogger.error('Reset request timeout', e);
+      return {
+        'success': false,
+        'message': 'Yêu cầu quá lâu, vui lòng thử lại.',
+      };
+    } catch (e, stackTrace) {
+      AppLogger.error('Unexpected error during password reset', e, stackTrace);
+      return {
+        'success': false,
+        'message': 'Lỗi xảy ra: ${e.toString()}',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      AppLogger.info('Attempting to reset password with token: $token');
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/password/reset/confirm'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'token': token,
+              'newPassword': newPassword,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      AppLogger.debug(
+          'Reset Password Response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': 'Password has been reset successfully.',
+        };
+      } else {
+        final data = jsonDecode(response.body);
+        final message = data['message'] ?? 'Password reset failed.';
+        return {
+          'success': false,
+          'message': message,
+        };
+      }
+    } on TimeoutException catch (e) {
+      AppLogger.error('Reset password timeout', e);
+      return {
+        'success': false,
+        'message': 'Kết nối quá lâu, vui lòng thử lại.',
+      };
+    } catch (e, stackTrace) {
+      AppLogger.error('Unexpected error during password reset', e, stackTrace);
+      return {
+        'success': false,
+        'message': 'Đã xảy ra lỗi: ${e.toString()}',
+      };
+    }
+  }
 }

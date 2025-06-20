@@ -1,3 +1,4 @@
+import 'package:english_app/core/services/exam_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -25,34 +26,21 @@ class _ExportExamScreenState extends State<ExportExamScreen> {
       return;
     }
 
-    try {
-      final response = await http.get(
-        Uri.parse('http://10.50.19.36:8083/api/tests/$_testId/export'),
-      );
-      if (response.statusCode == 200) {
-        // Lấy đường dẫn thư mục tải về
-        final directory = await getApplicationDocumentsDirectory();
-        final filePath = '${directory.path}/exported_exam_$_testId.csv';
+    final result = await ExamService.exportExam(_testId!);
 
-        // Lưu file CSV
-        final file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
+    if (result['success']) {
+      setState(() {
+        _exportData = result['content'];
+      });
 
-        setState(() {
-          _exportData = utf8.decode(response.bodyBytes); // Cập nhật preview
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Exam exported and saved to $filePath!')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to export exam.')),
-        );
-      }
-    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error during export.')),
+        SnackBar(
+          content: Text('Exam exported and saved to ${result['filePath']}!'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Failed to export.')),
       );
     }
   }
@@ -113,16 +101,21 @@ class _ExportExamScreenState extends State<ExportExamScreen> {
                       color: Colors.purple.shade900),
                 ),
                 const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.purple.shade200),
-                  ),
-                  child: Text(
-                    _exportData,
-                    style: const TextStyle(fontSize: 14),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 250),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.purple.shade200),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        _exportData,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

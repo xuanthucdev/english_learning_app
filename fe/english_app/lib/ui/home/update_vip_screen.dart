@@ -14,7 +14,6 @@ class UpdateVipScreen extends StatefulWidget {
 
 class _UpdateVipScreenState extends State<UpdateVipScreen> {
   bool _isLoading = false;
-  String _message = '';
 
   Future<void> _upgradeVip(String duration) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -22,15 +21,12 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
     final userId = prefs.getString('userId');
 
     if (userId == null) {
-      setState(() {
-        _message = 'Please log in to upgrade your VIP status.';
-      });
+      _showMessage('Please log in to upgrade your VIP status.', isError: true);
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _message = '';
     });
 
     try {
@@ -42,25 +38,34 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() {
-          _message = data['message'] ??
-              'VIP upgraded successfully for $duration months!';
-        });
+        _showMessage(data['message'] ??
+            'VIP upgraded successfully for $duration months!');
       } else {
-        setState(() {
-          _message =
-              'Failed to upgrade VIP: ${response.reasonPhrase} (${response.statusCode})';
-        });
+        _showMessage(
+          'Failed to upgrade VIP: ${response.reasonPhrase} (${response.statusCode})',
+          isError: true,
+        );
       }
     } catch (e) {
-      setState(() {
-        _message = 'Error upgrading VIP: $e';
-      });
+      _showMessage('Error upgrading VIP: $e', isError: true);
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Widget _buildSubscriptionCard({
@@ -194,20 +199,6 @@ class _UpdateVipScreenState extends State<UpdateVipScreen> {
                 ],
                 color: Colors.purple,
               ),
-              const SizedBox(height: 20),
-              if (_message.isNotEmpty)
-                Center(
-                  child: Text(
-                    _message,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: _message.contains('successfully')
-                          ? Colors.green
-                          : Colors.red,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),

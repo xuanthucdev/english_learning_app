@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:english_app/core/services/grammar_service.dart';
 import 'package:english_app/models/grammar_model.dart';
-import 'package:flutter/material.dart';
 
 class GrammarScreen extends StatefulWidget {
   @override
@@ -10,11 +13,12 @@ class GrammarScreen extends StatefulWidget {
 class _GrammarScreenState extends State<GrammarScreen> {
   late Future<List<Grammar>> _grammarFuture;
 
+  final String apiKey = 'AIzaSyDoBgifqtv2IWCod1FbOeqDYG0uvGNknBs';
+
   @override
   void initState() {
     super.initState();
-    _grammarFuture =
-        GrammarService.fetchGrammarTopics(); 
+    _grammarFuture = GrammarService.fetchGrammarTopics();
   }
 
   @override
@@ -136,6 +140,17 @@ class _GrammarScreenState extends State<GrammarScreen> {
                     _buildBadge('TOEIC: ${word.toeicFrequency}'),
                   ],
                 ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      _showChatWithAI(word);
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text("Hỏi AI"),
+                  ),
+                ),
               ],
             ),
           ),
@@ -154,7 +169,7 @@ class _GrammarScreenState extends State<GrammarScreen> {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Colors.purple.shade100,
+            color: Colors.deepPurple.shade700,
           ),
         ),
       ],
@@ -174,5 +189,125 @@ class _GrammarScreenState extends State<GrammarScreen> {
         style: const TextStyle(fontSize: 12, color: Colors.deepPurple),
       ),
     );
+  }
+
+  void _showChatWithAI(Grammar word) {
+    final TextEditingController _chatController = TextEditingController();
+    List<Map<String, String>> messages = [
+      {
+        'role': 'user',
+        'text':
+            'Bạn là một trợ lý chuyên giảng dạy ngữ pháp tiếng Anh.\nHãy giải thích chi tiết về: ${word.word} - ${word.definition}\nVídụ : ${word.example}'
+      }
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          return Padding(
+            padding: MediaQuery.of(context).viewInsets,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              height: 450,
+              child: Column(
+                children: [
+                  const Text("AI Assistant",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Divider(),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: messages.length,
+                      itemBuilder: (_, index) {
+                        final msg = messages[index];
+                        return Align(
+                          alignment: msg['role'] == 'user'
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: msg['role'] == 'user'
+                                  ? Colors.purple.shade100
+                                  : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(msg['text'] ?? ''),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _chatController,
+                          decoration: const InputDecoration(
+                              hintText: "Nhập câu hỏi..."),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: () async {
+                          final text = _chatController.text.trim();
+                          if (text.isNotEmpty) {
+                            setModalState(() {
+                              messages.add({'role': 'user', 'text': text});
+                            });
+
+                            final reply = await _askGemini(messages);
+                            setModalState(() {
+                              messages.add({'role': 'bot', 'text': reply});
+                            });
+                            _chatController.clear();
+                          }
+                        },
+                      )
+                    ],
+                  )
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Future<String> _askGemini(List<Map<String, String>> history) async {
+    final uri = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
+
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "contents": history.map((msg) {
+          final role = msg['role'] == 'bot'
+              ? 'model'
+              : (msg['role'] == 'system' ? 'user' : msg['role']);
+          return {
+            "role": role,
+            "parts": [
+              {"text": msg['text']}
+            ]
+          };
+        }).toList()
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['candidates'][0]['content']['parts'][0]['text'];
+    } else {
+      return "⚠️ Lỗi: ${response.body}";
+    }
   }
 }
